@@ -1,12 +1,14 @@
-# Archived from VS Code LeetCode plugin file: 49.字母异位词分组.py
-# Problem: 49 Group Anagrams
+from typing import List
 
 class Solution:
     def groupAnagrams(self, strs: List[str]) -> List[List[str]]:
-        anagram_map = {}
+        groups = {}
         for s in strs:
-            sorted_s = ''.join(sorted(s))
-            if sorted_s not in anagram_map:
-                anagram_map[sorted_s] = []
-            anagram_map[sorted_s].append(s)
-        return list(anagram_map.values())
+            freq = [0] * 26
+            for char in s:
+                freq[ord(char) - ord('a')] += 1
+            groups[tuple(freq)].append(s)
+        result = []
+        for k, v in groups:
+            result.append(v)
+        return result

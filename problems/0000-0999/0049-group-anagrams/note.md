@@ -16,18 +16,25 @@
   ],
   "status": "AC",
   "mastery": "ok",
-  "last_practiced": "2026-04-30",
-  "next_review": "2026-05-07",
-  "mistake_tags": [],
+  "last_practiced": "2026-07-16",
+  "next_review": "2026-07-19",
+  "mistake_tags": [
+    "python-api-detail",
+    "re",
+    "complexity-explanation-gap",
+    "tradeoff-gap"
+  ],
   "stats": {
-    "attempts": 0,
-    "hint_level_reached": 0,
+    "attempts": 2,
+    "hint_level_reached": 2,
     "solve_minutes": null,
-    "first_try_ac": null,
-    "judge_failures": [],
-    "recall_score": null,
-    "teach_back_done": false,
-    "last_mode": null
+    "first_try_ac": false,
+    "judge_failures": [
+      "RE"
+    ],
+    "recall_score": 3,
+    "teach_back_done": true,
+    "last_mode": "redo-from-memory"
   },
   "links": {
     "leetcode": "https://leetcode.com/problems/group-anagrams/",

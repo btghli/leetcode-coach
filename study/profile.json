@@ -8,8 +8,8 @@
   },
   "hint_policy": "progressive",
   "review_intervals_days": [1, 7, 30],
-  "leetcode_endpoint": "leetcode-cn",
-  "problem_url_template": "https://leetcode.cn/problems/{slug}/",
+  "leetcode_endpoint": "leetcode",
+  "problem_url_template": "https://leetcode.com/problems/{slug}/",
   "training_modes": [
     "blind-solve",
     "guided-solve",

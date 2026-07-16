@@ -7,3 +7,4 @@ __pycache__/
 leetcode-session.txt
 leetcode-csrf.txt
 workspace/leetcode/
+*.bak-*
