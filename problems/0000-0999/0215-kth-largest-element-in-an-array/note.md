@@ -14,20 +14,20 @@
   "lists": [
     "hot100"
   ],
-  "status": "Todo",
-  "mastery": "new",
-  "last_practiced": null,
-  "next_review": null,
+  "status": "AC",
+  "mastery": "ok",
+  "last_practiced": "2026-08-12",
+  "next_review": "2026-08-19",
   "mistake_tags": [],
   "stats": {
-    "attempts": 0,
+    "attempts": 1,
     "hint_level_reached": 0,
     "solve_minutes": null,
-    "first_try_ac": null,
+    "first_try_ac": true,
     "judge_failures": [],
-    "recall_score": null,
-    "teach_back_done": false,
-    "last_mode": null
+    "recall_score": 4,
+    "teach_back_done": true,
+    "last_mode": "redo-from-memory"
   },
   "links": {
     "leetcode": "https://leetcode.com/problems/kth-largest-element-in-an-array/",

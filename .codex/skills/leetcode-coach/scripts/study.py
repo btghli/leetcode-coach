@@ -1026,9 +1026,16 @@ def validate_templates(root: Path) -> List[str]:
     pattern_tmpl = root / "templates" / "pattern-note.md"
     if pattern_tmpl.exists():
         text = pattern_tmpl.read_text(encoding="utf-8")
-        for heading in ("## When To Use", "## Core Invariant", "## Common Mistakes", "## Contrast", "## Problems"):
-            if heading not in text:
-                errors.append(f"{pattern_tmpl}: missing {heading}")
+        heading_groups = (
+            ("## When To Use", "## Problem Shape"),
+            ("## Core Invariant",),
+            ("## Common Mistakes",),
+            ("## Contrast", "## Decision Boundary"),
+            ("## Problems", "## Representative Problems"),
+        )
+        for aliases in heading_groups:
+            if not any(heading in text for heading in aliases):
+                errors.append(f"{pattern_tmpl}: missing one of {', '.join(aliases)}")
     return errors
 
 

@@ -1,42 +1,50 @@
 # Pattern: <name>
 
-## When To Use
+## Problem Shape
 
-- Signal in problem statement:
-- Constraint shape:
-- Input/output clue:
+- 题面信号：
+- 约束形状：
+- 输入输出线索：
 
 ## Core Invariant
 
-- Invariant:
-- Why it is sufficient:
+- 不变量：
+- 它为什么足够：
 
-## Template
+## Why It Works
+
+- 如何覆盖全部候选或安全排除候选：
+- 正确性的最小证明：
+
+## Compact Template
 
 ```python
-# Keep this compact. Prefer invariant comments over full solutions.
+# 只保留骨架；优先写不变量注释，不放完整题解。
 ```
 
 ## Common Mistakes
 
-- Mistake tag:
-- Symptom:
-- Fix:
+- 错误表现：
+- 根因：
+- 修复：
 
-## Contrast
+## Decision Boundary
 
 | Nearby Pattern | Use This When | Use That When |
 | --- | --- | --- |
 |  |  |  |
 
-## Problems
+## Representative Problems
 
-| Problem | Why it belongs here | Mistake to remember |
+| Role | Problem | Why it belongs here |
 | --- | --- | --- |
-|  |  |  |
+| Anchor |  |  |
+| Transfer |  |  |
+| Contrast |  |  |
 
-## Review Prompts
+## Teach-back Prompts
 
-- Explain the invariant without code.
-- Give a counterexample to the wrong nearby pattern.
-- Write the template from memory.
+- 不看代码解释核心不变量。
+- 说明时间、空间复杂度。
+- 给出一个最容易错的边界。
+- 给出一个外形相似但本模式不适用的反例。

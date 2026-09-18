@@ -14,23 +14,22 @@
   ],
   "status": "AC",
   "mastery": "ok",
-  "last_practiced": "2026-07-16",
-  "next_review": "2026-07-19",
+  "last_practiced": "2026-07-30",
+  "next_review": "2026-08-06",
   "mistake_tags": [
     "python-api-detail",
-    "complexity-blindspot-duplicates"
+    "complexity-blindspot-duplicates",
+    "test-gap"
   ],
   "stats": {
-    "attempts": 1,
-    "hint_level_reached": 2,
+    "attempts": 3,
+    "hint_level_reached": 1,
     "solve_minutes": null,
-    "first_try_ac": false,
-    "judge_failures": [
-      "TLE"
-    ],
-    "recall_score": 3,
-    "teach_back_done": false,
-    "last_mode": "guided-solve"
+    "first_try_ac": true,
+    "judge_failures": [],
+    "recall_score": 4,
+    "teach_back_done": true,
+    "last_mode": "redo-from-memory"
   },
   "links": {
     "leetcode": "https://leetcode.com/problems/longest-consecutive-sequence/",

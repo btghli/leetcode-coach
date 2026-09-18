@@ -1,0 +1,1749 @@
+{
+  "version": 1,
+  "current_focus": {
+    "category": "greedy-intervals",
+    "subpattern": "interval-merge",
+    "problem_slug": "merge-intervals",
+    "set_at": "2026-09-03"
+  },
+  "categories": [
+    {
+      "slug": "array-hash",
+      "title": "数组与哈希",
+      "pattern_file": "array-hash.md",
+      "started_at": "2026-07-30",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "frequency-index",
+          "title": "计数与索引",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 1,
+              "slug": "two-sum",
+              "title": "Two Sum",
+              "difficulty": "Easy"
+            },
+            {
+              "id": 49,
+              "slug": "group-anagrams",
+              "title": "Group Anagrams",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 2,
+          "total_count": 2
+        },
+        {
+          "slug": "set-dedup",
+          "title": "集合去重与连续性",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 128,
+              "slug": "longest-consecutive-sequence",
+              "title": "Longest Consecutive Sequence",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "index-placement",
+          "title": "下标归位与原地标记",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 41,
+              "slug": "first-missing-positive",
+              "title": "First Missing Positive",
+              "difficulty": "Hard"
+            },
+            {
+              "id": 448,
+              "slug": "find-all-numbers-disappeared-in-an-array",
+              "title": "Find All Numbers Disappeared in an Array",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 2
+        },
+        {
+          "slug": "prefix-suffix-aggregate",
+          "title": "前后缀聚合",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 238,
+              "slug": "product-of-array-except-self",
+              "title": "Product of Array Except Self",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "sort-select",
+          "title": "排序、分区与选择",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 75,
+              "slug": "sort-colors",
+              "title": "Sort Colors",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 3,
+      "total_count": 7
+    },
+    {
+      "slug": "two-pointers",
+      "title": "双指针",
+      "pattern_file": "two-pointers.md",
+      "started_at": "2026-07-30",
+      "completed_at": "2026-08-12",
+      "subpatterns": [
+        {
+          "slug": "same-direction",
+          "title": "同向快慢指针",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 283,
+              "slug": "move-zeroes",
+              "title": "Move Zeroes",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "opposite-direction",
+          "title": "对撞与有序搜索",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 11,
+              "slug": "container-with-most-water",
+              "title": "Container With Most Water",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 15,
+              "slug": "3sum",
+              "title": "3Sum",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 2,
+          "total_count": 2
+        },
+        {
+          "slug": "dominance-settlement",
+          "title": "支配淘汰与逐项结算",
+          "started_at": "2026-08-12",
+          "completed_at": "2026-08-12",
+          "problems": [
+            {
+              "id": 42,
+              "slug": "trapping-rain-water",
+              "title": "Trapping Rain Water",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        }
+      ],
+      "completed": true,
+      "completed_count": 4,
+      "total_count": 4
+    },
+    {
+      "slug": "sliding-window",
+      "title": "滑动窗口",
+      "pattern_file": "sliding-window.md",
+      "started_at": "2026-07-30",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "no-repeat",
+          "title": "零重复跳跃",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 3,
+              "slug": "longest-substring-without-repeating-characters",
+              "title": "Longest Substring Without Repeating Characters",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "fixed-count",
+          "title": "定长计数",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 438,
+              "slug": "find-all-anagrams-in-a-string",
+              "title": "Find All Anagrams in a String",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "variable-longest",
+          "title": "变长求最长与至多 K",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 424,
+              "slug": "longest-repeating-character-replacement",
+              "title": "Longest Repeating Character Replacement",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "variable-shortest",
+          "title": "变长求最短",
+          "started_at": "2026-07-30",
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 209,
+              "slug": "minimum-size-subarray-sum",
+              "title": "Minimum Size Subarray Sum",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 76,
+              "slug": "minimum-window-substring",
+              "title": "Minimum Window Substring",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 1,
+          "total_count": 2
+        },
+        {
+          "slug": "exactly-k",
+          "title": "恰好 K 与 atMost 转化",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 992,
+              "slug": "subarrays-with-k-different-integers",
+              "title": "Subarrays with K Different Integers",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 3,
+      "total_count": 6
+    },
+    {
+      "slug": "prefix-sum",
+      "title": "前缀和与差分",
+      "pattern_file": "prefix-sum.md",
+      "started_at": "2026-07-30",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "range-query",
+          "title": "一维区间查询",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 303,
+              "slug": "range-sum-query-immutable",
+              "title": "Range Sum Query - Immutable",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "prefix-hash",
+          "title": "前缀和加哈希",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 560,
+              "slug": "subarray-sum-equals-k",
+              "title": "Subarray Sum Equals K",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "prefix-modulo",
+          "title": "前缀取模",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 974,
+              "slug": "subarray-sums-divisible-by-k",
+              "title": "Subarray Sums Divisible by K",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "two-dimensional-prefix",
+          "title": "二维前缀和",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 304,
+              "slug": "range-sum-query-2d-immutable",
+              "title": "Range Sum Query 2D - Immutable",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "difference-array",
+          "title": "差分数组",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 1109,
+              "slug": "corporate-flight-bookings",
+              "title": "Corporate Flight Bookings",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 2,
+      "total_count": 5
+    },
+    {
+      "slug": "binary-search",
+      "title": "二分查找",
+      "pattern_file": "binary-search.md",
+      "started_at": "2026-07-30",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "boundary-search",
+          "title": "有序定位与边界",
+          "started_at": "2026-07-30",
+          "completed_at": "2026-07-30",
+          "problems": [
+            {
+              "id": 34,
+              "slug": "find-first-and-last-position-of-element-in-sorted-array",
+              "title": "Find First and Last Position of Element in Sorted Array",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "rotated-search",
+          "title": "旋转有序数组",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 33,
+              "slug": "search-in-rotated-sorted-array",
+              "title": "Search in Rotated Sorted Array",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "peak-search",
+          "title": "峰值与局部单调性",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 162,
+              "slug": "find-peak-element",
+              "title": "Find Peak Element",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "answer-search",
+          "title": "答案二分",
+          "started_at": "2026-07-30",
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 875,
+              "slug": "koko-eating-bananas",
+              "title": "Koko Eating Bananas",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 1011,
+              "slug": "capacity-to-ship-packages-within-d-days",
+              "title": "Capacity To Ship Packages Within D Days",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 1,
+          "total_count": 2
+        }
+      ],
+      "completed": false,
+      "completed_count": 2,
+      "total_count": 5
+    },
+    {
+      "slug": "linked-list",
+      "title": "链表",
+      "pattern_file": "linked-list-two-pointers.md",
+      "started_at": "2026-08-03",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "fixed-gap",
+          "title": "固定间距与 dummy",
+          "started_at": "2026-08-03",
+          "completed_at": "2026-08-03",
+          "problems": [
+            {
+              "id": 19,
+              "slug": "remove-nth-node-from-end-of-list",
+              "title": "Remove Nth Node From End of List",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "fast-slow",
+          "title": "快慢指针",
+          "started_at": "2026-08-12",
+          "completed_at": "2026-08-12",
+          "problems": [
+            {
+              "id": 141,
+              "slug": "linked-list-cycle",
+              "title": "Linked List Cycle",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "in-place-reversal",
+          "title": "原地反转",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 206,
+              "slug": "reverse-linked-list",
+              "title": "Reverse Linked List",
+              "difficulty": "Easy"
+            },
+            {
+              "id": 92,
+              "slug": "reverse-linked-list-ii",
+              "title": "Reverse Linked List II",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 2
+        },
+        {
+          "slug": "merge-and-reorder",
+          "title": "合并与重排",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 21,
+              "slug": "merge-two-sorted-lists",
+              "title": "Merge Two Sorted Lists",
+              "difficulty": "Easy"
+            },
+            {
+              "id": 143,
+              "slug": "reorder-list",
+              "title": "Reorder List",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 2
+        },
+        {
+          "slug": "random-links",
+          "title": "非线性指针复制",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 138,
+              "slug": "copy-list-with-random-pointer",
+              "title": "Copy List with Random Pointer",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 2,
+      "total_count": 7
+    },
+    {
+      "slug": "monotonic-structures",
+      "title": "栈与单调结构",
+      "pattern_file": "monotonic-stack.md",
+      "started_at": "2026-07-30",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "syntax-stack",
+          "title": "括号与嵌套结构",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 20,
+              "slug": "valid-parentheses",
+              "title": "Valid Parentheses",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "evaluation-stack",
+          "title": "表达式求值",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 150,
+              "slug": "evaluate-reverse-polish-notation",
+              "title": "Evaluate Reverse Polish Notation",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "supporting-stack",
+          "title": "辅助栈维护极值",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 155,
+              "slug": "min-stack",
+              "title": "Min Stack",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "next-element",
+          "title": "单调栈：相邻更大/更小",
+          "started_at": "2026-07-30",
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 739,
+              "slug": "daily-temperatures",
+              "title": "Daily Temperatures",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 84,
+              "slug": "largest-rectangle-in-histogram",
+              "title": "Largest Rectangle in Histogram",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 1,
+          "total_count": 2
+        },
+        {
+          "slug": "monotonic-queue",
+          "title": "单调队列：窗口极值",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 239,
+              "slug": "sliding-window-maximum",
+              "title": "Sliding Window Maximum",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 1,
+      "total_count": 6
+    },
+    {
+      "slug": "heap",
+      "title": "堆与优先队列",
+      "pattern_file": "heap.md",
+      "started_at": "2026-08-12",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "top-k",
+          "title": "Top K",
+          "started_at": "2026-08-12",
+          "completed_at": "2026-08-12",
+          "problems": [
+            {
+              "id": 215,
+              "slug": "kth-largest-element-in-an-array",
+              "title": "Kth Largest Element in an Array",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "multiway-merge",
+          "title": "多路合并",
+          "started_at": "2026-08-12",
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 23,
+              "slug": "merge-k-sorted-lists",
+              "title": "Merge k Sorted Lists",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "two-heaps",
+          "title": "双堆与动态中位数",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 295,
+              "slug": "find-median-from-data-stream",
+              "title": "Find Median from Data Stream",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "heap-scheduling",
+          "title": "任务调度与重组",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 621,
+              "slug": "task-scheduler",
+              "title": "Task Scheduler",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 1,
+      "total_count": 4
+    },
+    {
+      "slug": "tree",
+      "title": "树",
+      "pattern_file": "tree.md",
+      "started_at": "2026-08-13",
+      "completed_at": "2026-08-13",
+      "subpatterns": [
+        {
+          "slug": "tree-dfs",
+          "title": "DFS 与后序聚合",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 104,
+              "slug": "maximum-depth-of-binary-tree",
+              "title": "Maximum Depth of Binary Tree",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "tree-path",
+          "title": "路径状态",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 437,
+              "slug": "path-sum-iii",
+              "title": "Path Sum III",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "tree-bfs",
+          "title": "层序 BFS",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 102,
+              "slug": "binary-tree-level-order-traversal",
+              "title": "Binary Tree Level Order Traversal",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "bst-order",
+          "title": "BST 有序性",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 98,
+              "slug": "validate-binary-search-tree",
+              "title": "Validate Binary Search Tree",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "lowest-common-ancestor",
+          "title": "最近公共祖先",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 236,
+              "slug": "lowest-common-ancestor-of-a-binary-tree",
+              "title": "Lowest Common Ancestor of a Binary Tree",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "tree-construction",
+          "title": "构造与序列化",
+          "started_at": "2026-08-13",
+          "completed_at": "2026-08-13",
+          "problems": [
+            {
+              "id": 105,
+              "slug": "construct-binary-tree-from-preorder-and-inorder-traversal",
+              "title": "Construct Binary Tree from Preorder and Inorder Traversal",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        }
+      ],
+      "completed": true,
+      "completed_count": 6,
+      "total_count": 6
+    },
+    {
+      "slug": "graph",
+      "title": "图",
+      "pattern_file": "graph.md",
+      "started_at": "2026-08-14",
+      "completed_at": "2026-09-02",
+      "subpatterns": [
+        {
+          "slug": "traversal",
+          "title": "DFS/BFS 遍历",
+          "started_at": "2026-08-14",
+          "completed_at": "2026-08-15",
+          "problems": [
+            {
+              "id": 200,
+              "slug": "number-of-islands",
+              "title": "Number of Islands",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "multi-source-bfs",
+          "title": "多源 BFS",
+          "started_at": "2026-08-15",
+          "completed_at": "2026-08-16",
+          "problems": [
+            {
+              "id": 994,
+              "slug": "rotting-oranges",
+              "title": "Rotting Oranges",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "topological-sort",
+          "title": "拓扑排序",
+          "started_at": "2026-08-16",
+          "completed_at": "2026-08-16",
+          "problems": [
+            {
+              "id": 207,
+              "slug": "course-schedule",
+              "title": "Course Schedule",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "union-find",
+          "title": "并查集",
+          "started_at": "2026-08-16",
+          "completed_at": "2026-08-16",
+          "problems": [
+            {
+              "id": 684,
+              "slug": "redundant-connection",
+              "title": "Redundant Connection",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "bipartite",
+          "title": "二分图与染色",
+          "started_at": "2026-08-30",
+          "completed_at": "2026-08-30",
+          "problems": [
+            {
+              "id": 785,
+              "slug": "is-graph-bipartite",
+              "title": "Is Graph Bipartite?",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "shortest-path",
+          "title": "带权最短路",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-02",
+          "problems": [
+            {
+              "id": 743,
+              "slug": "network-delay-time",
+              "title": "Network Delay Time",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "minimum-spanning-tree",
+          "title": "最小生成树",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-02",
+          "problems": [
+            {
+              "id": 1584,
+              "slug": "min-cost-to-connect-all-points",
+              "title": "Min Cost to Connect All Points",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        }
+      ],
+      "completed": true,
+      "completed_count": 7,
+      "total_count": 7
+    },
+    {
+      "slug": "backtracking",
+      "title": "回溯",
+      "pattern_file": "backtracking.md",
+      "started_at": "2026-09-02",
+      "completed_at": "2026-09-03",
+      "subpatterns": [
+        {
+          "slug": "subsets",
+          "title": "子集与选择",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-02",
+          "problems": [
+            {
+              "id": 78,
+              "slug": "subsets",
+              "title": "Subsets",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "permutations",
+          "title": "排列与使用标记",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-02",
+          "problems": [
+            {
+              "id": 46,
+              "slug": "permutations",
+              "title": "Permutations",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "combinations",
+          "title": "组合与候选起点",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-02",
+          "problems": [
+            {
+              "id": 39,
+              "slug": "combination-sum",
+              "title": "Combination Sum",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "partition-search",
+          "title": "切割与分段",
+          "started_at": "2026-09-02",
+          "completed_at": "2026-09-03",
+          "problems": [
+            {
+              "id": 131,
+              "slug": "palindrome-partitioning",
+              "title": "Palindrome Partitioning",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        },
+        {
+          "slug": "board-search",
+          "title": "棋盘搜索与约束传播",
+          "started_at": "2026-09-03",
+          "completed_at": "2026-09-03",
+          "problems": [
+            {
+              "id": 79,
+              "slug": "word-search",
+              "title": "Word Search",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": true,
+          "completed_count": 1,
+          "total_count": 1
+        }
+      ],
+      "completed": true,
+      "completed_count": 5,
+      "total_count": 5
+    },
+    {
+      "slug": "greedy-intervals",
+      "title": "区间与扫描线",
+      "pattern_file": "greedy-intervals.md",
+      "started_at": "2026-09-03",
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "interval-merge",
+          "title": "区间合并",
+          "started_at": "2026-09-03",
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 56,
+              "slug": "merge-intervals",
+              "title": "Merge Intervals",
+              "difficulty": "Medium"
+            },
+            {
+              "id": 57,
+              "slug": "insert-interval",
+              "title": "Insert Interval",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 1,
+          "total_count": 2
+        },
+        {
+          "slug": "interval-intersection",
+          "title": "区间交集",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 986,
+              "slug": "interval-list-intersections",
+              "title": "Interval List Intersections",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "interval-scheduling",
+          "title": "区间调度",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 435,
+              "slug": "non-overlapping-intervals",
+              "title": "Non-overlapping Intervals",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "overlap-count",
+          "title": "重叠计数与会议室",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 253,
+              "slug": "meeting-rooms-ii",
+              "title": "Meeting Rooms II",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 1,
+      "total_count": 5
+    },
+    {
+      "slug": "greedy",
+      "title": "贪心",
+      "pattern_file": "greedy.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "reachability-frontier",
+          "title": "最远可达边界",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 55,
+              "slug": "jump-game",
+              "title": "Jump Game",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "local-contribution",
+          "title": "局部贡献与重置",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 134,
+              "slug": "gas-station",
+              "title": "Gas Station",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 2
+    },
+    {
+      "slug": "dynamic-programming",
+      "title": "动态规划",
+      "pattern_file": "dynamic-programming.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "one-dimensional",
+          "title": "一维状态",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 70,
+              "slug": "climbing-stairs",
+              "title": "Climbing Stairs",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "knapsack",
+          "title": "背包",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 416,
+              "slug": "partition-equal-subset-sum",
+              "title": "Partition Equal Subset Sum",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "grid-dp",
+          "title": "网格 DP",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 62,
+              "slug": "unique-paths",
+              "title": "Unique Paths",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "two-sequence",
+          "title": "双序列 DP",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 1143,
+              "slug": "longest-common-subsequence",
+              "title": "Longest Common Subsequence",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "subsequence",
+          "title": "子序列",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 300,
+              "slug": "longest-increasing-subsequence",
+              "title": "Longest Increasing Subsequence",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "state-machine",
+          "title": "状态机 DP",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 309,
+              "slug": "best-time-to-buy-and-sell-stock-with-cooldown",
+              "title": "Best Time to Buy and Sell Stock with Cooldown",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "interval-dp",
+          "title": "区间 DP",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 516,
+              "slug": "longest-palindromic-subsequence",
+              "title": "Longest Palindromic Subsequence",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 7
+    },
+    {
+      "slug": "trie-string",
+      "title": "Trie 与字符串匹配",
+      "pattern_file": "trie-string.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "prefix-trie",
+          "title": "前缀树",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 208,
+              "slug": "implement-trie-prefix-tree",
+              "title": "Implement Trie (Prefix Tree)",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "wildcard-trie",
+          "title": "Trie 与通配符",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 211,
+              "slug": "design-add-and-search-words-data-structure",
+              "title": "Design Add and Search Words Data Structure",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "trie-dfs",
+          "title": "Trie 与 DFS",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 212,
+              "slug": "word-search-ii",
+              "title": "Word Search II",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "exact-string-match",
+          "title": "精确字符串匹配",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 28,
+              "slug": "find-the-index-of-the-first-occurrence-in-a-string",
+              "title": "Find the Index of the First Occurrence in a String",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "rolling-hash",
+          "title": "滚动哈希",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 187,
+              "slug": "repeated-dna-sequences",
+              "title": "Repeated DNA Sequences",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 5
+    },
+    {
+      "slug": "matrix-simulation",
+      "title": "矩阵与模拟",
+      "pattern_file": "matrix-simulation.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "boundary-traversal",
+          "title": "边界与方向遍历",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 54,
+              "slug": "spiral-matrix",
+              "title": "Spiral Matrix",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "in-place-transform",
+          "title": "原地矩阵变换",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 48,
+              "slug": "rotate-image",
+              "title": "Rotate Image",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "matrix-marking",
+          "title": "行列标记",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 73,
+              "slug": "set-matrix-zeroes",
+              "title": "Set Matrix Zeroes",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "state-simulation",
+          "title": "状态模拟",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 289,
+              "slug": "game-of-life",
+              "title": "Game of Life",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 4
+    },
+    {
+      "slug": "bit-math",
+      "title": "位运算与数学",
+      "pattern_file": "bit-math.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "xor-cancellation",
+          "title": "XOR 消元",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 136,
+              "slug": "single-number",
+              "title": "Single Number",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "bit-counting",
+          "title": "位计数与掩码",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 191,
+              "slug": "number-of-1-bits",
+              "title": "Number of 1 Bits",
+              "difficulty": "Easy"
+            },
+            {
+              "id": 338,
+              "slug": "counting-bits",
+              "title": "Counting Bits",
+              "difficulty": "Easy"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 2
+        },
+        {
+          "slug": "fast-power",
+          "title": "快速幂与分解",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 50,
+              "slug": "powx-n",
+              "title": "Pow(x, n)",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "number-theory",
+          "title": "数论与筛法",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 204,
+              "slug": "count-primes",
+              "title": "Count Primes",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "geometry",
+          "title": "坐标与斜率",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 149,
+              "slug": "max-points-on-a-line",
+              "title": "Max Points on a Line",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 6
+    },
+    {
+      "slug": "data-structure-design",
+      "title": "数据结构设计",
+      "pattern_file": "data-structure-design.md",
+      "started_at": null,
+      "completed_at": null,
+      "subpatterns": [
+        {
+          "slug": "constant-time-composition",
+          "title": "均摊 O(1) 结构组合",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 380,
+              "slug": "insert-delete-getrandom-o1",
+              "title": "Insert Delete GetRandom O(1)",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "cache-design",
+          "title": "缓存淘汰",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 146,
+              "slug": "lru-cache",
+              "title": "LRU Cache",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "time-index",
+          "title": "时间索引",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 981,
+              "slug": "time-based-key-value-store",
+              "title": "Time Based Key-Value Store",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "queue-design",
+          "title": "队列与环形缓冲区",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 622,
+              "slug": "design-circular-queue",
+              "title": "Design Circular Queue",
+              "difficulty": "Medium"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        },
+        {
+          "slug": "range-design",
+          "title": "区间结构",
+          "started_at": null,
+          "completed_at": null,
+          "problems": [
+            {
+              "id": 715,
+              "slug": "range-module",
+              "title": "Range Module",
+              "difficulty": "Hard"
+            }
+          ],
+          "completed": false,
+          "completed_count": 0,
+          "total_count": 1
+        }
+      ],
+      "completed": false,
+      "completed_count": 0,
+      "total_count": 5
+    }
+  ]
+}

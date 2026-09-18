@@ -2,11 +2,12 @@
 
 [![Checks](https://github.com/guanyipengai/leetcode-coach/actions/workflows/leetcode-coach-check.yml/badge.svg)](https://github.com/guanyipengai/leetcode-coach/actions/workflows/leetcode-coach-check.yml)
 ![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB)
-![Codex Skill](https://img.shields.io/badge/Codex-Skill-111827)
+![LangChain](https://img.shields.io/badge/LangChain-Agent-1C3C3C)
+![LangGraph](https://img.shields.io/badge/LangGraph-Workflow-111827)
 ![VS Code](https://img.shields.io/badge/VS%20Code-LeetCode%20extension-007ACC)
 ![Status](https://img.shields.io/badge/status-alpha-yellow)
 
-> A Codex skill and local study workspace that turns LeetCode practice into a review-driven coaching loop: solve in VS Code, get progressive hints, archive accepted solutions, and schedule evidence-based review.
+> A local LangChain/LangGraph coaching agent and study workspace that turns LeetCode practice into a review-driven loop: solve in VS Code, get progressive hints, archive accepted solutions, and schedule evidence-based review.
 
 <p align="center">
   <img src="assets/architecture2.png" alt="LeetCode Coach architecture and learning loop" width="920">
@@ -57,15 +58,82 @@ cp -n study/profile.example.json study/profile.json 2>/dev/null || true
 make check
 ```
 
+Install the application and browser UI server:
+
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -e '.[dev,ui,openai,anthropic,mcp]'
+```
+
+The default decision engine is the local Codex CLI. Install Codex, sign in with ChatGPT, and verify the safe login status before starting the coach:
+
+```bash
+codex login
+codex login status
+```
+
+The coach invokes Codex ephemerally in a temporary empty directory with a read-only sandbox and a `TurnDecision` JSON Schema. Codex receives only the bounded context prepared by LangGraph, including a compact read-only study summary for progress and planning questions; it does not own checkpoints or business-data writes.
+
 ### 2. Install the judge workflow
 
 Install the VS Code LeetCode extension, sign in, and open this repository in VS Code. The repository-level settings keep plugin-generated files under `workspace/leetcode/`, which is ignored by Git.
 
 Optional: configure LeetCode MCP for Codex if you want the coach to fetch problem metadata automatically.
 
-### 3. Start a coaching session
+### 3. Start the browser chat UI
 
-In Codex, start with:
+On macOS, double-click `start-leetcode-coach.command` in Finder. It starts the local Agent Server and opens the official Agent Chat UI with the connection values prefilled:
+
+```text
+Deployment URL: http://localhost:2024
+Graph ID: leetcode_coach
+LangSmith API key: leave blank
+```
+
+Keep the launcher window open while practicing; closing it stops the local server. The hosted UI runs in the browser and connects directly to the local server. If the setup form is shown, use the values above rather than its default `agent` Graph ID. Critical learning-data writes appear as approve/edit/reject interrupts.
+
+Alternatively, start it from the repository with `make ui`. If you only want the API server, use `make agent-server`, then open [Agent Chat UI](https://agentchat.vercel.app) yourself.
+
+No API key is required for the default `codex-cli` engine when Codex is already signed in with ChatGPT. To use a standard LangChain provider instead, configure it explicitly before starting the launcher:
+
+```bash
+export LEETCODE_COACH_ENGINE=langchain
+export LEETCODE_COACH_MODEL=<provider:model-id>
+export OPENAI_API_KEY=...      # for an OpenAI model
+# or ANTHROPIC_API_KEY=...     # for an Anthropic model
+```
+
+For the Codex backend, optional settings are `LEETCODE_COACH_CODEX_MODEL`, `LEETCODE_COACH_CODEX_BIN`, and `LEETCODE_COACH_CODEX_TIMEOUT`. The launcher can open without provider API values; the first decision turn reports missing Codex installation/login or provider configuration without changing learning data. Credentials are never printed or persisted by the project.
+
+### 4. Optional CLI and deterministic commands
+
+Inspect the deterministic plan:
+
+```bash
+.venv/bin/leetcode-coach status --brief
+.venv/bin/leetcode-coach plan
+```
+
+Start the LangGraph loop with the default Codex Subscription backend:
+
+```bash
+.venv/bin/leetcode-coach chat \
+  --engine codex-cli \
+  --thread-id daily-2026-07-30
+```
+
+An explicit provider model preserves the original LangChain CLI behavior:
+
+```bash
+.venv/bin/leetcode-coach chat \
+  --engine langchain \
+  --model <provider:model-id> \
+  --thread-id daily-2026-07-30
+```
+
+Use the same thread ID to resume after exiting. Conversation checkpoints live in the ignored `.cache/leetcode-coach/checkpoints.sqlite`; learning facts remain in problem notes and study files.
+
+From Codex or Claude Code, you can also start with:
 
 ```text
 用 leetcode-coach，今天开始 LeetCode 训练。
@@ -77,13 +145,57 @@ or:
 Use leetcode-coach. Start today's LeetCode practice.
 ```
 
-The coach should recover your current state, plan due reviews before new work, initialize the selected problem when needed, guide the solve, review code or judge failures, archive accepted code, require teach-back, and schedule the next review.
+The host agent should route you into the same project-neutral CLI rather than maintaining a separate provider-specific implementation.
+
+## Decision engines and LangGraph architecture
+
+The conversational agent owns natural-language semantics; LangGraph is a thin reliability boundary for selection state, checkpoints, validation, one human approval, and persistence. The model implementation remains swappable:
+
+```text
+Agent Chat UI / CLI
+        ↓
+Conversational DecisionEngine
+        ├── CodexCliDecisionEngine → codex exec → ChatGPT Subscription
+        ├── LangChainDecisionEngine → init_chat_model/create_agent → provider API or local model
+        └── FakeDecisionEngine → offline tests
+        ↓
+domain event: accepted / teach_back / switch_mode / continue
+        ↓
+Thin LangGraph boundary
+        ↓
+validate → preview all changes → one approval → grouped persist
+```
+
+The conversational path is intentionally loose, while the completion boundary is strict:
+
+```text
+select → coach ⇄ debug ⇄ questions
+                    ↓ accepted
+          conversational teach-back
+                    ↓ complete assessment
+       one complete_attempt approval
+                    ↓
+ archive + note + sweep + session (rollback together on failure)
+```
+
+Scheduling, mastery guards, note updates, and pattern completion remain deterministic Python services. The Codex adapter runs in an empty temporary working directory with `--ephemeral`, `--sandbox read-only`, ignored user config/rules, and structured output validation. LangChain is an optional provider adapter, not a requirement for the Codex engine. Critical writes remain outside every decision engine.
+
+`TurnDecision` expresses conversational intent rather than mirroring every graph phase. After AC, the agent emits `teach_back` only when the learner is actually providing a retrospective explanation; unrelated questions remain normal conversation. A separate `TeachBackDecision` evaluates the four required evidence fields. Assistant prose still cannot write or complete an attempt by itself.
+
+Completion produces one `complete_attempt` preview covering solution archive (when present), note/mastery update, pattern sweep sync, and session log. One approve/edit/reject decision covers that grouped operation; any internal failure restores all protected learning files. If UI approval controls are hidden, send the exact command `批准` / `approve` or `拒绝` / `reject`. `下一题` never implies approval.
+
+Routing order is due review, current work, uncovered pattern representative, then active-list work. Optional problem metadata lookup uses `langchain-mcp-adapters`; copy `leetcode-coach.toml.example` to `leetcode-coach.toml` to configure it. Without MCP, the application uses existing notes and the local sweep catalog, then requests structured human confirmation instead of guessing metadata.
+
+In chat, you can say `切换到题型扫荡模式` (or switch back with `切换到自动选题模式`). The decision engine returns a structured `switch_mode` intent; LangGraph validates it and stores `routing_mode` in the thread. Pattern sweep is a separate new-curriculum lane: it bypasses due reviews, current Doing/Review work, and the active list; finishes the current started pattern category before switching; then chooses the first wholly untouched pattern, returning to other partially covered categories only after every category has started. It presents each newly selected pattern's card and pauses, then advances through its uncovered subpatterns and representative problems one at a time. `routing_mode` controls curriculum selection, while `training_mode` controls how the selected problem is practiced.
+
+All automated tests use fake decision engines and temporary study repositories, so CI requires neither API keys nor live MCP servers. LangSmith tracing is optional and is not required for local use.
 
 
 ## Repository layout
 
 ```text
-.codex/skills/leetcode-coach/      # Codex skill, references, and helper script
+src/leetcode_coach/                # Domain services, LangChain tools, LangGraph, and CLI
+.codex/ and .claude/               # Thin host-agent adapters
 .github/workflows/                 # CI validation
 .vscode/settings.json              # VS Code LeetCode workspace settings
 docs/                              # Demo and troubleshooting notes

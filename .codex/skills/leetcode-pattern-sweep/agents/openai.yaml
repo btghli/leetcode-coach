@@ -1,0 +1,4 @@
+interface:
+  display_name: "LeetCode Pattern Sweep"
+  short_description: "Route LeetCode practice by pattern coverage."
+  default_prompt: "Use $leetcode-pattern-sweep to choose my next pattern-sweep problem."

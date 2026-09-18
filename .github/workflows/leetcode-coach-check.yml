@@ -12,7 +12,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+      - name: Install package and offline test dependencies
+        run: python3 -m pip install -e '.[dev,ui,mcp]'
       - name: Compile helper
         run: python3 -m py_compile .codex/skills/leetcode-coach/scripts/study.py
       - name: Validate coach data
         run: python3 .codex/skills/leetcode-coach/scripts/study.py check
+      - name: Run offline unit and graph tests
+        run: python3 -m pytest

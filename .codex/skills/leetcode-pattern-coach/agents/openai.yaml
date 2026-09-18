@@ -1,0 +1,4 @@
+interface:
+  display_name: "LeetCode Pattern Coach"
+  short_description: "Pattern-based LeetCode coaching and progress tracking"
+  default_prompt: "Use $leetcode-pattern-coach to continue my next pattern-based LeetCode practice session."

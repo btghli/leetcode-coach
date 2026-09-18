@@ -16,22 +16,23 @@
   ],
   "status": "AC",
   "mastery": "ok",
-  "last_practiced": "2026-07-16",
-  "next_review": "2026-07-19",
+  "last_practiced": "2026-07-28",
+  "next_review": "2026-07-31",
   "mistake_tags": [
     "python-api-detail",
     "re",
     "complexity-explanation-gap",
-    "tradeoff-gap"
+    "tradeoff-gap",
+    "initialization-error",
+    "pattern-boundary-gap",
+    "edge-case-recall"
   ],
   "stats": {
-    "attempts": 2,
+    "attempts": 4,
     "hint_level_reached": 2,
     "solve_minutes": null,
-    "first_try_ac": false,
-    "judge_failures": [
-      "RE"
-    ],
+    "first_try_ac": true,
+    "judge_failures": [],
     "recall_score": 3,
     "teach_back_done": true,
     "last_mode": "redo-from-memory"

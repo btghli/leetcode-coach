@@ -1,11 +1,4 @@
 {
-  "leetcode.workspaceFolder": "${workspaceFolder}/workspace/leetcode",
-  "leetcode.filePath": {
-    "default": {
-      "folder": "",
-      "filename": "${id}.${kebab-case-name}.${ext}"
-    }
-  },
-  "leetcode.defaultLanguage": "python3",
-  "leetcode.endpoint": "leetcode"
+  "vsc-leetcode.storagePath": "/Users/yihandu/GitHub/leetcode-coach/workspace/leetcode",
+  "vsc-leetcode.defaultLanguage": "python3"
 }

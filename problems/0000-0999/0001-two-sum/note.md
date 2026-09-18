@@ -14,12 +14,14 @@
   ],
   "status": "AC",
   "mastery": "ok",
-  "last_practiced": "2026-07-13",
-  "next_review": "2026-07-20",
-  "mistake_tags": [],
+  "last_practiced": "2026-07-30",
+  "next_review": "2026-08-06",
+  "mistake_tags": [
+    "tradeoff-gap"
+  ],
   "stats": {
-    "attempts": 1,
-    "hint_level_reached": 0,
+    "attempts": 3,
+    "hint_level_reached": 1,
     "solve_minutes": null,
     "first_try_ac": true,
     "judge_failures": [],

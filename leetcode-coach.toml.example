@@ -1,0 +1,20 @@
+# The local Codex CLI decision engine is the default. It reuses `codex login`.
+engine = "codex-cli"
+# codex_model = "<optional-codex-model-id>"
+# codex_bin = "/optional/path/to/codex"
+# codex_timeout_seconds = 120
+
+# To use the original LangChain provider adapter instead:
+# engine = "langchain"
+# model = "openai:<model-id>"
+# model = "anthropic:<model-id>"
+checkpoint_path = ".cache/leetcode-coach/checkpoints.sqlite"
+
+# Optional MCP metadata adapter. Do not put secrets in this file.
+# [mcp]
+# metadata_tool = "get_problem"
+#
+# [mcp.servers.leetcode]
+# transport = "stdio"
+# command = "path-to-your-leetcode-mcp-server"
+# args = []

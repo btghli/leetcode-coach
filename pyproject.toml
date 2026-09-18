@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "leetcode-coach"
+version = "0.2.0"
+description = "A local, review-driven LeetCode coach powered by LangChain and LangGraph"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "langchain>=1.1,<2",
+  "langgraph>=1.0,<2",
+  "langgraph-checkpoint-sqlite>=3,<4",
+  "pydantic>=2.7,<3",
+]
+
+[project.optional-dependencies]
+openai = ["langchain-openai>=1,<2"]
+anthropic = ["langchain-anthropic>=1,<2"]
+mcp = ["langchain-mcp-adapters>=0.2,<1"]
+ui = ["langgraph-cli[inmem]>=0.4,<1"]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.24,<2"]
+
+[project.scripts]
+leetcode-coach = "leetcode_coach.cli:main"
+leetcode-coach-ui = "leetcode_coach.ui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+asyncio_mode = "auto"
