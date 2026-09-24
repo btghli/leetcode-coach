@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from leetcode_coach import curriculum
 from leetcode_coach.schemas import AttemptDraft, ProblemMetadata
 from leetcode_coach.services import MetadataResolver, PatternSweepService, StudyService
 
@@ -32,6 +35,21 @@ def test_solid_guard_remains_deterministic(study_repo):
         assert "teach_back_done is false" in str(exc)
     else:
         raise AssertionError("solid must be rejected without teach-back")
+
+
+def test_archive_solution_uses_direct_application_api(study_repo, tmp_path):
+    study = StudyService(study_repo)
+    study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
+    source = tmp_path / "submitted.py"
+    source.write_text("class Solution:\n    def answer(self):\n        return 42\n", encoding="utf-8")
+
+    destination = study.archive_solution("two-sum", str(source))
+
+    solution = Path(destination)
+    assert solution.name == "solution.py"
+    assert solution.parent.name == "0001-two-sum"
+    assert "return 42" in solution.read_text(encoding="utf-8")
+    assert solution.with_name("test_solution.py").is_file()
 
 
 async def test_metadata_resolver_local_first(study_repo):
@@ -104,27 +122,27 @@ def test_pattern_sweep_finishes_current_category_before_starting_an_untouched_on
 
 def test_pattern_sweep_prefers_untouched_after_current_category_completes(study_repo):
     sweep = PatternSweepService(study_repo)
-    state = sweep.module.progress(sweep.module.default_state(), {})
+    state = curriculum.progress(curriculum.default_state(), {})
     by_slug = {category["slug"]: category for category in state["categories"]}
     by_slug["sliding-window"]["started_at"] = "2026-07-30"
     by_slug["linked-list"]["started_at"] = "2026-08-03"
     by_slug["linked-list"]["completed"] = True
     state["current_focus"] = {"category": "linked-list"}
 
-    category = sweep.module.next_category(state)
+    category = curriculum.next_category(state)
 
     assert category["slug"] == "array-hash"
 
 
 def test_pattern_sweep_legacy_state_advances_after_most_recent_category_completes(study_repo):
     sweep = PatternSweepService(study_repo)
-    state = sweep.module.progress(sweep.module.default_state(), {})
+    state = curriculum.progress(curriculum.default_state(), {})
     by_slug = {category["slug"]: category for category in state["categories"]}
     by_slug["sliding-window"]["started_at"] = "2026-07-30"
     by_slug["linked-list"]["started_at"] = "2026-08-03"
     by_slug["linked-list"]["completed"] = True
 
-    category = sweep.module.next_category(state)
+    category = curriculum.next_category(state)
 
     assert category["slug"] == "array-hash"
 
@@ -152,13 +170,13 @@ def test_pattern_sweep_sync_writes_progress_mirror(study_repo):
 
 def test_pattern_sweep_load_merges_expanded_catalog(study_repo):
     sweep = PatternSweepService(study_repo)
-    old = sweep.module.default_state()
+    old = curriculum.default_state()
     old["categories"] = old["categories"][:1]
     old["categories"][0]["started_at"] = "2026-01-02"
-    sweep.module.save_state(study_repo, old)
+    curriculum.save_state(study_repo, old)
 
-    merged = sweep.module.load_state(study_repo)
+    merged = curriculum.load_state(study_repo)
 
     assert merged["categories"][0]["started_at"] == "2026-01-02"
-    assert len(merged["categories"]) == len(sweep.module.CATALOG)
+    assert len(merged["categories"]) == len(curriculum.CATALOG)
     assert merged["categories"][-1]["slug"] == "data-structure-design"

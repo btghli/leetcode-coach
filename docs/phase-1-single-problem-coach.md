@@ -61,7 +61,8 @@ The coach:
 | `attempts.py` | Atomic single-attempt completion workflow |
 | `engines.py` | Bounded Codex and LangChain decision adapters |
 | `graph.py` | Single-problem conversation state and approval routing |
-| `services.py` | Compatibility facade during legacy-script extraction |
+| `study_store.py` / `curriculum.py` | Canonical writes, compatibility commands, and pattern curriculum |
+| `services.py` | Typed application facade |
 | `cli.py` | Stable local entry point |
 
 ## Acceptance coverage

@@ -4,6 +4,7 @@ from leetcode_coach.repository import ProblemRepository
 from leetcode_coach.scheduler import StudyScheduler
 from leetcode_coach.schemas import AttemptDraft, ProblemMetadata
 from leetcode_coach.services import StudyService
+from leetcode_coach import study_store
 
 
 def test_scheduler_selects_due_review_before_open_problem(study_repo):
@@ -24,7 +25,7 @@ def test_scheduler_selects_due_review_before_open_problem(study_repo):
         teach_back=True,
     ))
     note = study.repository.find("two-sum")[0]
-    study.module.update_note_meta(
+    study_store.update_note_meta(
         note,
         {
             "next_review": (dt.date.today() - dt.timedelta(days=1)).isoformat(),
@@ -46,7 +47,7 @@ def test_scheduler_skips_a_due_problem_practiced_today(study_repo):
     ))
     note = study.repository.find("two-sum")[0]
     today = dt.date.today().isoformat()
-    study.module.update_note_meta(note, {"status": "AC", "next_review": "2020-01-01", "last_practiced": today})
+    study_store.update_note_meta(note, {"status": "AC", "next_review": "2020-01-01", "last_practiced": today})
 
     assert StudyScheduler(ProblemRepository(study_repo)).due_problems() == []
 

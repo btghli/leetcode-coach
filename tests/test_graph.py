@@ -4,6 +4,7 @@ from langchain.messages import AIMessage, HumanMessage
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
+from leetcode_coach import study_store
 from leetcode_coach.graph import (
     TrainingGraph,
     _accepted_command,
@@ -206,8 +207,8 @@ async def test_selection_resumes_in_progress_before_due_review(study_repo):
         study.initialize_problem(metadata)
     due_note = study.repository.find("group-anagrams")[0]
     open_note = study.repository.find("two-sum")[0]
-    study.module.update_note_meta(due_note, {"status": "AC", "next_review": "2020-01-01"})
-    study.module.update_note_meta(open_note, {"status": "Doing"})
+    study_store.update_note_meta(due_note, {"status": "AC", "next_review": "2020-01-01"})
+    study_store.update_note_meta(open_note, {"status": "Doing"})
     graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine()).build(InMemorySaver())
 
     result = await graph.ainvoke({"messages": []}, config={"configurable": {"thread_id": "resume-first"}}, version="v2")

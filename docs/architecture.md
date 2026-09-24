@@ -94,7 +94,9 @@ study state.
 | --- | --- |
 | `schemas.py` | Validated domain and graph-boundary models |
 | `config.py` | Project, provider, and checkpoint configuration |
-| `services.py` | Facades over study and pattern-sweep scripts |
+| `study_store.py` | Canonical note writes, solution archive, sessions, validation, and compatibility CLI |
+| `curriculum.py` | Canonical pattern catalog, selection, synchronization, and compatibility CLI |
+| `services.py` | Typed facades over canonical application modules |
 | `engines.py` | Codex CLI, LangChain, and fake decision engines |
 | `graph.py` | Selection, conversation state, approval, and persistence flow |
 | `cli.py` | Status, planning, sweep, chat, and thread commands |
@@ -122,26 +124,16 @@ The skill directories adapt the project to different coding-agent hosts:
 .agents/skills/
 ```
 
-Skills should eventually contain only routing instructions and thin wrappers
-around the canonical `leetcode-coach` CLI. They should not own scheduling,
-metadata, persistence, or curriculum business rules.
-
-Today, three scripts still own substantial behavior:
+Skills contain routing instructions and thin compatibility wrappers around the
+canonical application package. They do not own scheduling, persistence, or
+curriculum business rules. The remaining host-specific implementation is:
 
 | Script | Current responsibility |
 | --- | --- |
-| `.codex/skills/leetcode-coach/scripts/study.py` | Notes, scheduling, archive, sessions, migration, validation, and CLI |
-| `.codex/skills/leetcode-pattern-sweep/scripts/sweep.py` | Curriculum catalog, selection, synchronization, and validation |
 | `.codex/skills/leetcode-pattern-coach/scripts/pattern_coach.py` | Lightweight pattern-only routing |
 
-`StudyService` and `PatternSweepService` dynamically import these scripts.
-This keeps older commands working, but reverses the desired dependency
-direction.
-
-Problem-note discovery, metadata parsing, read contexts, repository discovery,
-and protected filesystem transactions have begun moving to the canonical
-`src/leetcode_coach/repository.py` module. The legacy study script remains the
-compatibility implementation for commands that have not yet been extracted.
+The former study and pattern-sweep scripts now import `study_store.py` and
+`curriculum.py`; the application never imports from a host skill directory.
 
 ## Training lifecycle
 
@@ -221,12 +213,12 @@ output/
 
 ## Complexity hotspots
 
-The current implementation has four main sources of accidental complexity:
+The current implementation has three main sources of accidental complexity:
 
-1. `src/leetcode_coach` depends on dynamically imported skill scripts.
-2. Study operations are concentrated in one large `study.py` script.
-3. `TrainingGraph` combines conversational routing with persistence workflow.
-4. Three host-skill trees repeat similar instructions and adapters.
+1. Write operations and compatibility CLI commands remain concentrated in the
+   large canonical `study_store.py` module.
+2. `TrainingGraph` still combines conversational routing with approval flow.
+3. Three host-skill trees repeat similar instructions and adapters.
 
 The number of directories is less important than clarifying who owns each
 rule. Moving files without first fixing ownership would only rearrange the
@@ -278,15 +270,17 @@ logic from a host-specific skill directory.
 Refactoring should preserve commands and repository data at every stage:
 
 1. Establish a green baseline with `make check` and `make test`.
-2. Extract note parsing and persistence from `study.py` into the application
-   package while leaving compatibility wrappers in place.
-3. Extract scheduling and planning from `study.py`.
-4. Move pattern catalog and sweep rules into the application package.
-5. Change skill scripts into thin CLI compatibility wrappers.
-6. Move grouped attempt persistence out of `TrainingGraph` into an application
-   service.
-7. Reduce duplicated skill instructions after all hosts call the same CLI.
-8. Add an optional, read-only Obsidian export layer derived from authoritative
+2. Keep note parsing, writes, and compatibility commands in the application
+   package while leaving thin skill wrappers in place. **Done.**
+3. Keep scheduling and planning in the application package. **Done.**
+4. Keep pattern catalog and sweep rules in the application package. **Done.**
+5. Keep study and pattern-sweep skill scripts as thin wrappers. **Done.**
+6. Expose direct write APIs from `study_store.py`; `StudyService` no longer
+   invokes CLI commands or redirects process-global stdout. **Done.**
+7. Keep grouped attempt persistence in `AttemptService`; further reduce the
+   approval plumbing that remains in `TrainingGraph`.
+8. Reduce duplicated skill instructions after all hosts call the same CLI.
+9. Add an optional, read-only Obsidian export layer derived from authoritative
    data.
 
 Every extraction must keep `make check` and `make test` green. Repository-data

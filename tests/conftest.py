@@ -25,7 +25,7 @@ def repo_root() -> Path:
 
 @pytest.fixture
 def study_repo(tmp_path: Path, repo_root: Path) -> Path:
-    for name in (".codex", "templates"):
+    for name in ("templates",):
         shutil.copytree(repo_root / name, tmp_path / name)
     (tmp_path / "study" / "sessions").mkdir(parents=True)
     (tmp_path / "problems").mkdir()

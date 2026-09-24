@@ -3,32 +3,14 @@
 from __future__ import annotations
 
 import asyncio
-import contextlib
-import importlib.util
-import io
-import json
 import re
-import sys
-from functools import lru_cache
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
+from . import curriculum, study_store
 from .repository import ProblemRepository, find_root
 from .scheduler import StudyScheduler
 from .schemas import AttemptDraft, ProblemMetadata
-
-
-@lru_cache(maxsize=8)
-def _load_module(path_string: str, name: str) -> ModuleType:
-    path = Path(path_string)
-    spec = importlib.util.spec_from_file_location(name, path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Cannot load helper module: {path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[name] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 class StudyService:
@@ -36,19 +18,6 @@ class StudyService:
         self.root = root.resolve()
         self.repository = ProblemRepository(self.root)
         self.scheduler = StudyScheduler(self.repository)
-        self.module = _load_module(
-            str(self.root / ".codex" / "skills" / "leetcode-coach" / "scripts" / "study.py"),
-            "leetcode_coach_legacy_study",
-        )
-
-    def _invoke(self, argv: list[str], expect_json: bool = False) -> Any:
-        stdout, stderr = io.StringIO(), io.StringIO()
-        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
-            code = int(self.module.main([*argv, "--root", str(self.root)]) or 0)
-        if code:
-            raise RuntimeError(stderr.getvalue().strip() or stdout.getvalue().strip() or f"study command failed: {code}")
-        output = stdout.getvalue().strip()
-        return json.loads(output) if expect_json else output
 
     def protected_transaction(self):
         return self.repository.protected_transaction()
@@ -69,78 +38,99 @@ class StudyService:
         return self.repository.context(slug)
 
     def initialize_problem(self, metadata: ProblemMetadata) -> dict[str, Any]:
-        args = [
-            "init-problem", "--id", str(metadata.id), "--slug", metadata.slug,
-            "--title", metadata.title, "--difficulty", metadata.difficulty,
-            "--tags", ",".join(metadata.tags), "--lists", ",".join(metadata.lists), "--json",
-        ]
-        return self._invoke(args, expect_json=True)
+        try:
+            return study_store.initialize_problem(
+                self.root,
+                problem_id=metadata.id,
+                slug=metadata.slug,
+                title=metadata.title,
+                difficulty=metadata.difficulty,
+                tags=metadata.tags,
+                lists=metadata.lists,
+            )
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
 
     def finish_attempt(self, attempt: AttemptDraft) -> dict[str, Any]:
-        args = [
-            "finish", "--slug", attempt.slug, "--status", attempt.status,
-            "--mastery", attempt.mastery, "--mode", attempt.mode,
-            "--quality", str(attempt.quality), "--hint-level", str(attempt.hint_level),
-            "--teach-back", str(attempt.teach_back).lower(), "--json",
-        ]
-        if attempt.solve_minutes is not None:
-            args += ["--solve-minutes", str(attempt.solve_minutes)]
-        if attempt.first_try_ac is not None:
-            args += ["--first-try-ac", str(attempt.first_try_ac).lower()]
-        if attempt.judge_failures:
-            args += ["--judge-failures", ",".join(attempt.judge_failures)]
-        if attempt.mistake_tags:
-            args += ["--mistake-tags", ",".join(attempt.mistake_tags)]
-        return self._invoke(args, expect_json=True)
+        try:
+            return study_store.finish_attempt(
+                self.root,
+                slug=attempt.slug,
+                status=attempt.status,
+                mastery=attempt.mastery,
+                mode=attempt.mode,
+                quality=attempt.quality,
+                hint_level=attempt.hint_level,
+                solve_minutes=attempt.solve_minutes,
+                first_try_ac=attempt.first_try_ac,
+                judge_failures=attempt.judge_failures or None,
+                teach_back=attempt.teach_back,
+                allow_unverified_solid=False,
+                clear_mistake_tags=False,
+                mistake_tags=attempt.mistake_tags,
+                next_review=None,
+                review_in_days=None,
+            )
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
 
     def archive_solution(self, slug: str, source: str | None = None) -> str:
-        args = ["archive-solution", "--slug", slug, "--mode", "standalone", "--with-tests"]
-        args += ["--source", source] if source else ["--from-plugin"]
-        return self._invoke(args)
+        try:
+            result = study_store.archive_solution(
+                self.root,
+                slug=slug,
+                source=source,
+                from_plugin=source is None,
+                mode="standalone",
+                with_tests=True,
+            )
+        except ValueError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return str(result["dest"])
 
     def plugin_files(self, slug: str) -> list[dict[str, Any]]:
         context = self.problem_context(slug)
         problem_id = context["metadata"].get("id") if context else None
-        return self.module.matching_plugin_files(self.root, slug, problem_id)
+        return study_store.matching_plugin_files(self.root, slug, problem_id)
 
     def log_session(self, *, problems: list[str], summary: str, next_step: str, mode: str, quality: int) -> dict[str, Any]:
-        return self._invoke([
-            "log-session", "--problems", ",".join(problems), "--summary", summary,
-            "--next", next_step, "--mode", mode, "--quality", str(quality), "--json",
-        ], expect_json=True)
+        return study_store.log_session(
+            self.root,
+            problems=",".join(problems),
+            summary=summary,
+            next_step=next_step,
+            mode=mode,
+            quality=quality,
+        )
 
 
 class PatternSweepService:
     def __init__(self, root: Path):
         self.root = root.resolve()
-        self.module = _load_module(
-            str(self.root / ".codex" / "skills" / "leetcode-pattern-sweep" / "scripts" / "sweep.py"),
-            "leetcode_coach_legacy_sweep",
-        )
 
     def status(self) -> dict[str, Any]:
-        state = self.module.progress(self.module.load_state(self.root), self.module.notes(self.root))
+        state = curriculum.progress(curriculum.load_state(self.root), curriculum.notes(self.root))
         return state
 
     def recommend_next(self) -> dict[str, Any] | None:
         """Return curriculum work only; reviews belong to the normal study route."""
 
-        state = self.module.progress(self.module.load_state(self.root), self.module.notes(self.root))
-        indexed = self.module.notes(self.root)
-        category = self.module.next_category(state)
-        return self.module.next_in_category(category, indexed) if category else None
+        state = curriculum.progress(curriculum.load_state(self.root), curriculum.notes(self.root))
+        indexed = curriculum.notes(self.root)
+        category = curriculum.next_category(state)
+        return curriculum.next_in_category(category, indexed) if category else None
 
     def pattern_card(self, category_slug: str) -> dict[str, Any] | None:
-        state = self.module.progress(self.module.load_state(self.root), self.module.notes(self.root))
+        state = curriculum.progress(curriculum.load_state(self.root), curriculum.notes(self.root))
         category = next((item for item in state["categories"] if item["slug"] == category_slug), None)
         if category is None:
             return None
-        path = self.module.pattern_path(self.root, category)
+        path = curriculum.pattern_path(self.root, category)
         if not path.is_file():
             return None
         content = path.read_text(encoding="utf-8")
         content = re.sub(
-            re.escape(self.module.START) + r".*?" + re.escape(self.module.END),
+            re.escape(curriculum.START) + r".*?" + re.escape(curriculum.END),
             "",
             content,
             flags=re.S,
@@ -161,7 +151,7 @@ class PatternSweepService:
         }
 
     def catalog_metadata(self, slug: str) -> ProblemMetadata | None:
-        for _, _, _, subpatterns in self.module.CATALOG:
+        for _, _, _, subpatterns in curriculum.CATALOG:
             for _, _, problems in subpatterns:
                 for problem in problems:
                     if problem["slug"] == slug:
@@ -177,11 +167,11 @@ class PatternSweepService:
         return None
 
     def sync(self) -> dict[str, Any]:
-        indexed = self.module.notes(self.root)
-        state = self.module.reconcile(self.module.load_state(self.root), indexed)
-        self.module.save_state(self.root, state)
-        self.module.sync_cards(self.root, state, indexed)
-        self.module.sync_progress(self.root, state)
+        indexed = curriculum.notes(self.root)
+        state = curriculum.reconcile(curriculum.load_state(self.root), indexed)
+        curriculum.save_state(self.root, state)
+        curriculum.sync_cards(self.root, state, indexed)
+        curriculum.sync_progress(self.root, state)
         return state
 
 
