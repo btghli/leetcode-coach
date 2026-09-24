@@ -1,7 +1,7 @@
 import pytest
 
 from leetcode_coach.attempts import AttemptService
-from leetcode_coach.schemas import AttemptDraft, ProblemMetadata
+from leetcode_coach.schemas import AttemptDraft, ProblemMetadata, TeachBackAssessment
 from leetcode_coach.services import PatternSweepService, StudyService
 
 
@@ -14,6 +14,38 @@ def _attempt() -> AttemptDraft:
         hint_level=1,
         teach_back=True,
     )
+
+
+def _assessment() -> TeachBackAssessment:
+    return TeachBackAssessment(
+        invariant_correct=True,
+        complexity_correct=True,
+        edge_case_identified=True,
+        pattern_boundary_understood=True,
+        suggested_quality=5,
+        feedback="完整",
+    )
+
+
+def test_prepare_builds_one_validated_completion_preview(study_repo):
+    study = StudyService(study_repo)
+    sweep = PatternSweepService(study_repo)
+    study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
+
+    preview = AttemptService(study, sweep).prepare(
+        slug="two-sum",
+        training_mode="guided-solve",
+        assessment=_assessment(),
+        hint_level=1,
+        judge_failures=["WA"],
+        archive_completed=False,
+    )
+
+    assert preview.attempt.mastery == "solid"
+    assert preview.attempt.first_try_ac is False
+    assert preview.pending_action.action == "complete_attempt"
+    assert preview.pending_action.arguments["attempt"] == preview.attempt.model_dump()
+    assert preview.operations == ("更新题目训练记录", "同步 pattern sweep coverage", "写入 session log")
 
 
 def test_complete_attempt_updates_note_sweep_and_session(study_repo):

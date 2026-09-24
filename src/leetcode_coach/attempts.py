@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .schemas import AttemptDraft
+from .schemas import AttemptDraft, PendingAction, TeachBackAssessment
 
 if TYPE_CHECKING:
     from .services import PatternSweepService, StudyService
@@ -19,12 +19,59 @@ class CompletionResult:
     session_logged: bool
 
 
+@dataclass(frozen=True)
+class CompletionPreview:
+    attempt: AttemptDraft
+    pending_action: PendingAction
+    operations: tuple[str, ...]
+
+
 class AttemptService:
     """Execute all durable completion writes inside one rollback boundary."""
 
     def __init__(self, study: StudyService, sweep: PatternSweepService):
         self.study = study
         self.sweep = sweep
+
+    def prepare(
+        self,
+        *,
+        slug: str,
+        training_mode: str,
+        assessment: TeachBackAssessment,
+        hint_level: int,
+        judge_failures: list[str],
+        archive_completed: bool,
+    ) -> CompletionPreview:
+        """Build the one durable completion preview from validated evidence."""
+
+        quality = assessment.suggested_quality
+        mastery = "solid" if quality == 5 and assessment.complete else ("ok" if quality >= 3 else "shaky")
+        attempt = AttemptDraft(
+            slug=slug,
+            mastery=mastery,
+            mode=training_mode,
+            quality=quality,
+            hint_level=hint_level,
+            first_try_ac=not judge_failures,
+            judge_failures=judge_failures,
+            teach_back=True,
+        )
+        should_archive = bool(not archive_completed and self.study.plugin_files(slug))
+        operations = ["更新题目训练记录", "同步 pattern sweep coverage", "写入 session log"]
+        if should_archive:
+            operations.insert(0, "归档 VS Code accepted solution")
+        pending = PendingAction(
+            action="complete_attempt",
+            arguments={
+                "attempt": attempt.model_dump(),
+                "archive_solution": should_archive,
+                "sync_pattern_sweep": True,
+                "log_session": True,
+            },
+            description=f"完成 {slug}：" + "、".join(operations),
+        )
+        return CompletionPreview(attempt=attempt, pending_action=pending, operations=tuple(operations))
 
     def complete(
         self,
@@ -62,4 +109,4 @@ class AttemptService:
         )
 
 
-__all__ = ["AttemptService", "CompletionResult"]
+__all__ = ["AttemptService", "CompletionPreview", "CompletionResult"]

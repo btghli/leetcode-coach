@@ -13,7 +13,7 @@ from langgraph.types import Command, interrupt
 from .attempts import AttemptService
 from .engines import DecisionEngine, LangChainDecisionEngine, LazyLangChainDecisionEngine
 from .message_content import is_accepted_report, normalize_message_content
-from .schemas import AttemptDraft, PendingAction, Phase, ProblemMetadata, TurnDecision
+from .schemas import AttemptDraft, PendingAction, Phase, ProblemMetadata, TeachBackAssessment, TurnDecision
 from .services import MetadataResolver, PatternSweepService, StudyService
 
 
@@ -462,41 +462,22 @@ class TrainingGraph:
                 "last_error": "completion_without_problem",
                 "messages": [AIMessage(content="当前没有可完成的题目，训练数据未改变。")],
             }
-        assessment = state.get("teach_back_assessment") or {}
-        quality = int(assessment.get("suggested_quality", 3))
-        mastery = "solid" if quality == 5 and all((
-            assessment.get("invariant_correct"), assessment.get("complexity_correct"),
-            assessment.get("edge_case_identified"), assessment.get("pattern_boundary_understood"),
-        )) else ("ok" if quality >= 3 else "shaky")
         judge_failures = list(state.get("judge_failures") or [])
-        attempt = AttemptDraft(
-            slug=problem["slug"], mastery=mastery, mode=state.get("training_mode", "guided-solve"),
-            quality=quality, hint_level=int(state.get("hint_level", 0)),
-            first_try_ac=not judge_failures,
+        preview = self.attempts.prepare(
+            slug=problem["slug"],
+            training_mode=state.get("training_mode", "guided-solve"),
+            assessment=TeachBackAssessment.model_validate(state.get("teach_back_assessment") or {}),
+            hint_level=int(state.get("hint_level", 0)),
             judge_failures=judge_failures,
-            teach_back=True,
-        )
-        should_archive = bool(not state.get("archive_completed") and self.study.plugin_files(problem["slug"]))
-        operations = ["更新题目训练记录", "同步 pattern sweep coverage", "写入 session log"]
-        if should_archive:
-            operations.insert(0, "归档 VS Code accepted solution")
-        pending = PendingAction(
-            action="complete_attempt",
-            arguments={
-                "attempt": attempt.model_dump(),
-                "archive_solution": should_archive,
-                "sync_pattern_sweep": True,
-                "log_session": True,
-            },
-            description=f"完成 {attempt.slug}：" + "、".join(operations),
+            archive_completed=bool(state.get("archive_completed")),
         )
         return {
             "phase": Phase.AWAITING_APPROVAL.value,
-            "attempt_draft": attempt.model_dump(),
-            "pending_action": pending.model_dump(),
+            "attempt_draft": preview.attempt.model_dump(),
+            "pending_action": preview.pending_action.model_dump(),
             "messages": [AIMessage(content=(
                 "训练已达到可持久化条件。以下变更将作为一次完整操作执行：\n- "
-                + "\n- ".join(operations)
+                + "\n- ".join(preview.operations)
                 + "\n批准前不会修改学习数据。"
             ))],
             "last_error": None,

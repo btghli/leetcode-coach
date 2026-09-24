@@ -217,7 +217,9 @@ The current implementation has three main sources of accidental complexity:
 
 1. Write operations and compatibility CLI commands remain concentrated in the
    large canonical `study_store.py` module.
-2. `TrainingGraph` still combines conversational routing with approval flow.
+2. `TrainingGraph` still combines conversational routing with approval flow,
+   although grouped completion preparation and execution now belong to
+   `AttemptService`.
 3. Three host-skill trees repeat similar instructions and adapters.
 
 The number of directories is less important than clarifying who owns each
@@ -277,8 +279,8 @@ Refactoring should preserve commands and repository data at every stage:
 5. Keep study and pattern-sweep skill scripts as thin wrappers. **Done.**
 6. Expose direct write APIs from `study_store.py`; `StudyService` no longer
    invokes CLI commands or redirects process-global stdout. **Done.**
-7. Keep grouped attempt persistence in `AttemptService`; further reduce the
-   approval plumbing that remains in `TrainingGraph`.
+7. Keep grouped attempt preview and persistence in `AttemptService`; approval
+   response handling now has one shared path in `TrainingGraph`. **Done.**
 8. Reduce duplicated skill instructions after all hosts call the same CLI.
 9. Add an optional, read-only Obsidian export layer derived from authoritative
    data.
