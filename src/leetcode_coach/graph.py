@@ -11,8 +11,15 @@ from langgraph.graph.message import add_messages
 from langgraph.types import Command, interrupt
 
 from .attempts import AttemptService
+from .chat_commands import (
+    accepted_command,
+    approval_command,
+    next_problem_command,
+    next_subpattern_command,
+    routing_mode_command,
+)
 from .engines import DecisionEngine, LangChainDecisionEngine, LazyLangChainDecisionEngine
-from .message_content import is_accepted_report, normalize_message_content
+from .message_content import normalize_message_content
 from .schemas import AttemptDraft, PendingAction, Phase, ProblemMetadata, TeachBackAssessment, TurnDecision
 from .services import MetadataResolver, PatternSweepService, StudyService
 
@@ -26,53 +33,6 @@ def _last_human_text(state: CoachState) -> str:
         None,
     )
     return normalize_message_content(last.content).strip() if last else ""
-
-
-def _routing_mode_command(text: str) -> str | None:
-    """Recognize explicit workflow controls before model/bootstrap routing."""
-
-    normalized = " ".join(text.lower().strip().split())
-    if normalized in {"/auto", "/mode auto", "/退出扫荡"}:
-        return "auto"
-    mentions_sweep = "扫荡" in normalized or "pattern-sweep" in normalized or "pattern sweep" in normalized
-    if mentions_sweep and any(token in normalized for token in ("退出", "关闭", "停止", "离开")):
-        return "auto"
-    if "自动选题" in normalized and any(token in normalized for token in ("切换", "进入", "恢复", "使用")):
-        return "auto"
-    if normalized in {"/sweep", "/mode pattern-sweep"}:
-        return "pattern-sweep"
-    if mentions_sweep and any(token in normalized for token in ("切换", "进入", "开启", "开始", "启用", "使用", "我要")):
-        return "pattern-sweep"
-    return None
-
-
-def _next_subpattern_command(text: str) -> bool:
-    normalized = " ".join(text.lower().strip().split())
-    if normalized in {"/next-subpattern", "/next pattern"}:
-        return True
-    mentions_next = any(token in normalized for token in ("下一个", "继续下个", "next"))
-    mentions_subpattern = any(token in normalized for token in ("小模式", "subpattern", "sub-pattern"))
-    return mentions_next and mentions_subpattern
-
-
-def _next_problem_command(text: str) -> bool:
-    normalized = " ".join(text.lower().strip().split())
-    return normalized in {"下一题", "继续下一题", "下道题", "next", "next problem", "/next"}
-
-
-def _accepted_command(text: str) -> bool:
-    return is_accepted_report(text)
-
-
-def _approval_chat_command(text: str) -> str | None:
-    """Allow explicit HITL decisions when a chat UI hides interrupt controls."""
-
-    normalized = " ".join(text.lower().strip().split())
-    if normalized in {"批准", "同意", "确认", "approve", "/approve", "批准并继续"}:
-        return "approve"
-    if normalized in {"拒绝", "不同意", "reject", "/reject", "不要保存"}:
-        return "reject"
-    return None
 
 
 class CoachState(TypedDict):
@@ -161,18 +121,18 @@ class TrainingGraph:
             # instead of resolving the interrupt. Acknowledge it before
             # presenting the approval request again so the UI never appears
             # silent.
-            return "chat_approval" if _approval_chat_command(_last_human_text(state)) else "pending"
+            return "chat_approval" if approval_command(_last_human_text(state)) else "pending"
         messages = state.get("messages", [])
         if messages and not isinstance(messages[-1], HumanMessage):
             # Resuming an idle checkpoint without a new learner message must
             # not replay the previous turn through the conversational agent.
             return "end"
         text = _last_human_text(state)
-        if _routing_mode_command(text) is not None or _next_subpattern_command(text):
+        if routing_mode_command(text) is not None or next_subpattern_command(text):
             return "turn"
-        if _next_problem_command(text):
+        if next_problem_command(text):
             return "load"
-        if _accepted_command(text):
+        if accepted_command(text):
             return "turn"
         selected = state.get("selected_problem") or {}
         if state.get("routing_mode") == "pattern-sweep" and selected and selected.get("reason") != "pattern-sweep":
@@ -180,7 +140,7 @@ class TrainingGraph:
         if state.get("phase") == Phase.PATTERN_CARD and state.get("routing_mode") == "pattern-sweep":
             return "load"
         if state.get("phase") == Phase.COMPLETE:
-            return "load" if _next_problem_command(text) else "turn"
+            return "load" if next_problem_command(text) else "turn"
         if not state.get("selected_problem"):
             return "turn" if messages else "load"
         return "turn"
@@ -323,7 +283,7 @@ class TrainingGraph:
 
     def process_turn(self, state: CoachState) -> dict[str, Any]:
         text = _last_human_text(state)
-        requested_mode = _routing_mode_command(text)
+        requested_mode = routing_mode_command(text)
         if requested_mode is not None:
             label = "题型扫荡" if requested_mode == "pattern-sweep" else "自动选题"
             decision = TurnDecision(
@@ -331,7 +291,7 @@ class TrainingGraph:
                 requested_mode=requested_mode,
                 response=f"正在切换到{label}模式。",
             )
-        elif _next_subpattern_command(text):
+        elif next_subpattern_command(text):
             if self._can_advance_subpattern(state):
                 return {
                     "phase": Phase.SELECTING.value,
@@ -348,7 +308,7 @@ class TrainingGraph:
             }
         elif text == "/quit":
             decision = TurnDecision(action="quit", response="已保存当前对话 checkpoint，下次可用同一 thread 继续。")
-        elif _accepted_command(text):
+        elif accepted_command(text):
             decision = TurnDecision(action="accepted", response="收到 AC。请完成 teach-back：说明 invariant、复杂度、最容易遗漏的边界，以及何时不适用。")
         elif state.get("phase") == Phase.TEACH_BACK.value and state.get("judge_result") == "AC":
             teach_back = self.engine.assess_teach_back(state)
@@ -497,7 +457,7 @@ class TrainingGraph:
         }
 
     def chat_approval(self, state: CoachState) -> dict[str, Any]:
-        decision = _approval_chat_command(_last_human_text(state))
+        decision = approval_command(_last_human_text(state))
         return self._resolve_approval(state, {"type": decision or "reject"}, announce=True)
 
     def approval(self, state: CoachState) -> dict[str, Any]:

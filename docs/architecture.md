@@ -97,6 +97,7 @@ study state.
 | `study_store.py` | Canonical note writes, solution archive, sessions, validation, and compatibility CLI |
 | `curriculum.py` | Canonical pattern catalog, selection, synchronization, and compatibility CLI |
 | `services.py` | Typed facades over canonical application modules |
+| `chat_commands.py` | Deterministic parsing for explicit workflow commands |
 | `engines.py` | Codex CLI, LangChain, and fake decision engines |
 | `graph.py` | Selection, conversation state, approval, and persistence flow |
 | `cli.py` | Status, planning, sweep, chat, and thread commands |

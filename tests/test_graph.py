@@ -5,14 +5,13 @@ from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.types import Command
 
 from leetcode_coach import study_store
-from leetcode_coach.graph import (
-    TrainingGraph,
-    _accepted_command,
-    _approval_chat_command,
-    _last_human_text,
-    _next_problem_command,
-    _routing_mode_command,
+from leetcode_coach.chat_commands import (
+    accepted_command,
+    approval_command,
+    next_problem_command,
+    routing_mode_command,
 )
+from leetcode_coach.graph import TrainingGraph, _last_human_text
 from leetcode_coach.schemas import ProblemMetadata, TeachBackAssessment, TeachBackDecision, TurnDecision
 from leetcode_coach.services import MetadataResolver, PatternSweepService, StudyService
 
@@ -60,11 +59,11 @@ class JudgeFailureEngine(FakeEngine):
 
 
 def test_explicit_mode_commands_are_deterministic():
-    assert _routing_mode_command("切换到题型扫荡模式") == "pattern-sweep"
-    assert _routing_mode_command("我要使用 pattern sweep") == "pattern-sweep"
-    assert _routing_mode_command("退出题型扫荡模式") == "auto"
-    assert _routing_mode_command("切换到自动选题模式") == "auto"
-    assert _routing_mode_command("什么是题型扫荡模式？") is None
+    assert routing_mode_command("切换到题型扫荡模式") == "pattern-sweep"
+    assert routing_mode_command("我要使用 pattern sweep") == "pattern-sweep"
+    assert routing_mode_command("退出题型扫荡模式") == "auto"
+    assert routing_mode_command("切换到自动选题模式") == "auto"
+    assert routing_mode_command("什么是题型扫荡模式？") is None
 
 
 def test_agent_chat_content_blocks_are_normalized_before_commands():
@@ -82,22 +81,22 @@ def test_idle_checkpoint_does_not_replay_last_human_turn():
 
 
 def test_accepted_judge_reports_are_deterministic():
-    assert _accepted_command("/ac")
-    assert _accepted_command("19 ac 了")
-    assert _accepted_command("#19 AC了")
-    assert _accepted_command("提交通过了")
-    assert _accepted_command("too many questiones. No 19 got ac")
-    assert _accepted_command("I got AC")
-    assert not _accepted_command("还没 ac")
-    assert not _accepted_command("I did not get ac")
-    assert not _accepted_command("AC 是什么意思？")
+    assert accepted_command("/ac")
+    assert accepted_command("19 ac 了")
+    assert accepted_command("#19 AC了")
+    assert accepted_command("提交通过了")
+    assert accepted_command("too many questiones. No 19 got ac")
+    assert accepted_command("I got AC")
+    assert not accepted_command("还没 ac")
+    assert not accepted_command("I did not get ac")
+    assert not accepted_command("AC 是什么意思？")
 
 
 def test_chat_approval_requires_an_explicit_command():
-    assert _approval_chat_command("批准") == "approve"
-    assert _approval_chat_command("/approve") == "approve"
-    assert _approval_chat_command("拒绝") == "reject"
-    assert _approval_chat_command("下一题") is None
+    assert approval_command("批准") == "approve"
+    assert approval_command("/approve") == "approve"
+    assert approval_command("拒绝") == "reject"
+    assert approval_command("下一题") is None
 
 
 def test_coaching_remains_model_driven_after_multiple_turns(study_repo):
@@ -115,9 +114,9 @@ def test_coaching_remains_model_driven_after_multiple_turns(study_repo):
 
 
 def test_next_problem_is_a_narrow_explicit_control():
-    assert _next_problem_command("下一题")
-    assert _next_problem_command("next problem")
-    assert not _next_problem_command("我做过多少题？")
+    assert next_problem_command("下一题")
+    assert next_problem_command("next problem")
+    assert not next_problem_command("我做过多少题？")
     assert TrainingGraph.route_start({
         "messages": [HumanMessage(content="我做过多少题？")],
     }) == "turn"
