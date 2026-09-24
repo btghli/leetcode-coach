@@ -7,6 +7,17 @@ from pathlib import Path
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def offline_tracing(monkeypatch):
+    """Tests never upload learner records, even on a developer's configured machine."""
+    from leetcode_coach.observability import get_observer
+    monkeypatch.setenv('LANGSMITH_TRACING', 'false')
+    monkeypatch.delenv('LANGCHAIN_TRACING_V2', raising=False)
+    get_observer.cache_clear()
+    yield
+    get_observer.cache_clear()
+
+
 @pytest.fixture
 def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]

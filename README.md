@@ -82,17 +82,34 @@ Optional: configure LeetCode MCP for Codex if you want the coach to fetch proble
 
 ### 3. Start the browser chat UI
 
-On macOS, double-click `start-leetcode-coach.command` in Finder. It starts the local Agent Server and opens the official Agent Chat UI with the connection values prefilled:
+Run `make ui`, or double-click `start-leetcode-coach.command` on macOS. This opens the local learning workbench:
 
 ```text
-Deployment URL: http://localhost:2024
-Graph ID: leetcode_coach
-LangSmith API key: leave blank
+http://127.0.0.1:2025
 ```
 
-Keep the launcher window open while practicing; closing it stops the local server. The hosted UI runs in the browser and connects directly to the local server. If the setup form is shown, use the values above rather than its default `agent` Graph ID. Critical learning-data writes appear as approve/edit/reject interrupts.
+The workbench includes learning statistics, curriculum coverage, due reviews,
+session notes, single-problem chat, and a searchable library of all 18 pattern
+categories. Python skeletons are copied from existing pattern cards; subpatterns
+without dedicated templates are labeled as shared category material. Viewing
+templates does not change mastery or mark practice complete.
 
-Alternatively, start it from the repository with `make ui`. If you only want the API server, use `make agent-server`, then open [Agent Chat UI](https://agentchat.vercel.app) yourself.
+Keep the launcher window open while practicing. The browser remembers the current
+thread and restores its LangGraph checkpoint on refresh. Judge shortcuts prepare
+a message for you to send. After teach-back, review the proposed changes and
+choose **保存练习** or **暂不保存**. Statistics refresh after successful persistence.
+
+For a headless launch or a different port:
+
+```bash
+python3 -m leetcode_coach.web --no-browser --port 2025
+```
+
+The original Agent Server remains available via `make agent-server`. You can
+still connect [Agent Chat UI](https://agentchat.vercel.app) to
+`http://localhost:2024`, graph ID `leetcode_coach`. The workbench uses the same
+graph directly and the CLI's SQLite checkpoint store; it needs no Agent Server
+or hosted frontend.
 
 No API key is required for the default `codex-cli` engine when Codex is already signed in with ChatGPT. To use a standard LangChain provider instead, configure it explicitly before starting the launcher:
 
@@ -159,7 +176,7 @@ Conversational DecisionEngine
         ├── LangChainDecisionEngine → init_chat_model/create_agent → provider API or local model
         └── FakeDecisionEngine → offline tests
         ↓
-domain event: accepted / teach_back / switch_mode / continue
+validated coaching action or phase-specific teach-back assessment
         ↓
 Thin LangGraph boundary
         ↓
@@ -180,11 +197,11 @@ select → coach ⇄ debug ⇄ questions
 
 Scheduling, mastery guards, note updates, and pattern completion remain deterministic Python services. The Codex adapter runs in an empty temporary working directory with `--ephemeral`, `--sandbox read-only`, ignored user config/rules, and structured output validation. LangChain is an optional provider adapter, not a requirement for the Codex engine. Critical writes remain outside every decision engine.
 
-`TurnDecision` expresses conversational intent rather than mirroring every graph phase. After AC, the agent emits `teach_back` only when the learner is actually providing a retrospective explanation; unrelated questions remain normal conversation. A separate `TeachBackDecision` evaluates the four required evidence fields. Assistant prose still cannot write or complete an attempt by itself.
+`TurnDecision` handles coaching and debugging intent. After AC, the graph calls `TeachBackDecision` directly, so one learner message produces at most one model reply. That phase-specific decision distinguishes evidence from ordinary conversation and evaluates the four required fields only from learner messages recorded after the current problem's AC event. Assistant prose cannot become evidence or complete an attempt.
 
 Completion produces one `complete_attempt` preview covering solution archive (when present), note/mastery update, pattern sweep sync, and session log. One approve/edit/reject decision covers that grouped operation; any internal failure restores all protected learning files. If UI approval controls are hidden, send the exact command `批准` / `approve` or `拒绝` / `reject`. `下一题` never implies approval.
 
-Routing order is due review, current work, uncovered pattern representative, then active-list work. Optional problem metadata lookup uses `langchain-mcp-adapters`; copy `leetcode-coach.toml.example` to `leetcode-coach.toml` to configure it. Without MCP, the application uses existing notes and the local sweep catalog, then requests structured human confirmation instead of guessing metadata.
+Normal routing is owned by `StudyScheduler`: resume current Doing/Review work, then choose a due review, then active-list work. Pattern representatives are selected only in explicit pattern-sweep mode. Optional problem metadata lookup uses `langchain-mcp-adapters`; copy `leetcode-coach.toml.example` to `leetcode-coach.toml` to configure it. Without MCP, the application uses existing notes and the local sweep catalog, then requests structured human confirmation instead of guessing metadata.
 
 In chat, you can say `切换到题型扫荡模式` (or switch back with `切换到自动选题模式`). The decision engine returns a structured `switch_mode` intent; LangGraph validates it and stores `routing_mode` in the thread. Pattern sweep is a separate new-curriculum lane: it bypasses due reviews, current Doing/Review work, and the active list; finishes the current started pattern category before switching; then chooses the first wholly untouched pattern, returning to other partially covered categories only after every category has started. It presents each newly selected pattern's card and pauses, then advances through its uncovered subpatterns and representative problems one at a time. `routing_mode` controls curriculum selection, while `training_mode` controls how the selected problem is practiced.
 
@@ -194,7 +211,7 @@ All automated tests use fake decision engines and temporary study repositories, 
 ## Repository layout
 
 ```text
-src/leetcode_coach/                # Domain services, LangChain tools, LangGraph, and CLI
+src/leetcode_coach/                # Domain services, decision adapters, LangGraph, and CLI
 .codex/ and .claude/               # Thin host-agent adapters
 .github/workflows/                 # CI validation
 .vscode/settings.json              # VS Code LeetCode workspace settings
@@ -294,6 +311,65 @@ Use strict validation when you want to enforce teach-back evidence for `solid` p
 ```bash
 make strict-check
 ```
+
+## LangSmith observability
+
+The local UI, CLI chat, and graph server can send teaching traces to LangSmith.
+Create a LangSmith key and add these settings to the Git-ignored `.env.local`:
+
+```dotenv
+LANGSMITH_API_KEY=your-key
+LANGSMITH_TRACING=true
+LANGSMITH_PROJECT=leetcode-coach
+# Set LANGSMITH_ENDPOINT for a non-default region.
+# Set LANGSMITH_WORKSPACE_ID if your key needs an explicit workspace.
+```
+
+Only tracing settings are read from this file; Codex CLI keeps its existing login.
+Process environment values override the file. A configured key enables tracing
+unless `LANGSMITH_TRACING=false`; restart the application after changing settings.
+The default endpoint is GCP US. This feature sends data to a third-party service.
+
+In LangSmith, open **Tracing Projects → leetcode-coach**:
+
+- Expand a turn to see graph nodes such as `process_turn` and `assess_teach_back`.
+- Expand `codex.decision` for the supplied prompt, validated decision, latency and
+  CLI-reported input/output/cache token usage. Missing usage is unknown, not zero.
+- Group/filter by `thread_id` to inspect a conversation; model-call metadata also
+  includes the teaching phase, problem slug and decision type.
+- Review long or repetitive turns and add useful examples to evaluation datasets.
+
+Detailed traces contain teaching messages, supplied code and the bounded current
+problem context already sent to the model. They do not scan/upload the repository
+or Codex auth files. Known environment secrets, common key formats and local home/
+temporary paths are redacted before upload, including errors and metadata; raw
+Codex reasoning/tool events and serialized runtime objects are excluded. This is
+not comprehensive PII detection: do not paste confidential information into chat.
+
+`LANGSMITH_TRACING_SAMPLING_RATE` optionally controls trace sampling (default 1).
+Sampled totals are not whole-account usage. Codex subscription usage is not an API
+invoice; no model identity or monetary cost is fabricated. Tracing failures do not
+intentionally block coaching, and offline tests disable tracing automatically.
+
+The local workbench streams Codex replies over a POST NDJSON connection. It uses
+the same Codex CLI login via `codex app-server` and an ephemeral single-turn thread
+to receive `item/agentMessage/delta` notifications. LangGraph still exclusively
+owns learning conversation state, checkpoints and approval/persistence decisions.
+This requires a CLI version supporting app-server, ephemeral threads and output
+schemas (verified with 0.153.4). Terminal chat retains its existing exec transport.
+
+While generating, only the structured decision's `response` text is displayed as
+an unvalidated preview. The final schema-validated graph state replaces it; partial
+JSON never changes mastery or saves a learning record. The model may take time
+before its first text delta. On disconnect, the backend finishes/checkpoints the
+in-flight turn; refresh before resending, especially around save approvals. No
+automatic request retries or simulated typewriter playback are used. LangChain
+provider mode currently delivers graph-stage events and a final response, not
+token previews. The decision engine controls conversational progression without
+a mechanical turn-count cutoff. Each Codex
+decision carries only the last four messages (maximum 1,800 characters each) and
+problem metadata; full local notes stay local and are never injected into a model
+decision.
 
 ## Project status
 

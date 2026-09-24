@@ -26,7 +26,10 @@ def test_scheduler_selects_due_review_before_open_problem(study_repo):
     note = study.repository.find("two-sum")[0]
     study.module.update_note_meta(
         note,
-        {"next_review": (dt.date.today() - dt.timedelta(days=1)).isoformat()},
+        {
+            "next_review": (dt.date.today() - dt.timedelta(days=1)).isoformat(),
+            "last_practiced": (dt.date.today() - dt.timedelta(days=2)).isoformat(),
+        },
     )
 
     selected = StudyScheduler(ProblemRepository(study_repo)).choose_next()
@@ -34,6 +37,18 @@ def test_scheduler_selects_due_review_before_open_problem(study_repo):
     assert selected is not None
     assert selected["slug"] == "two-sum"
     assert selected["_reason"] == "due-review"
+
+
+def test_scheduler_skips_a_due_problem_practiced_today(study_repo):
+    study = StudyService(study_repo)
+    study.initialize_problem(ProblemMetadata(
+        id=1, slug="two-sum", title="Two Sum", difficulty="Easy", lists=["example"],
+    ))
+    note = study.repository.find("two-sum")[0]
+    today = dt.date.today().isoformat()
+    study.module.update_note_meta(note, {"status": "AC", "next_review": "2020-01-01", "last_practiced": today})
+
+    assert StudyScheduler(ProblemRepository(study_repo)).due_problems() == []
 
 
 def test_scheduler_reports_uninitialized_active_list_problem(study_repo):

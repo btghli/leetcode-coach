@@ -52,9 +52,15 @@ class StudyScheduler:
                 continue
             try:
                 next_review = dt.date.fromisoformat(str(item["next_review"])) if item.get("next_review") else None
+                last_practiced = dt.date.fromisoformat(str(item["last_practiced"])) if item.get("last_practiced") else None
             except ValueError:
                 continue
-            if next_review and next_review <= date and item.get("status") in {"AC", "Review"}:
+            # A note can retain an overdue review date after a same-day
+            # practice update (for example after an explicit override). Do
+            # not schedule it twice in one day; the next calendar day can
+            # surface it again if it remains due.
+            if (next_review and next_review <= date and last_practiced != date
+                    and item.get("status") in {"AC", "Review"}):
                 due.append(item)
         return sorted(due, key=lambda item: (item.get("next_review") or "", item.get("id") or 0))
 
@@ -99,6 +105,13 @@ class StudyScheduler:
 
     def choose_next(self) -> dict[str, Any] | None:
         active_list = self.profile().get("active_list", "example")
+        # Resume an unfinished problem before opening another review. This
+        # policy lives here so every UI and graph observes the same order.
+        items = [item for item in self.repository.all() if not item.get("_error")]
+        for status in ("Doing", "Review"):
+            current = next((item for item in items if item.get("status") == status), None)
+            if current:
+                return {**current, "_reason": "current-work"}
         due = self.due_problems()
         if due:
             return {**due[0], "_reason": "due-review"}
@@ -107,21 +120,13 @@ class StudyScheduler:
             for item in candidates:
                 if item.get("status") == status:
                     return {**item, "_reason": f"active-list:{active_list}"}
-        known = {item.get("slug") for item in self.repository.all() if not item.get("_error")}
+        known = {item.get("slug") for item in items}
         for slug in self.list_slugs(active_list):
             if slug not in known:
                 return self.uninitialized(slug, f"active-list:{active_list}:needs-init")
-        for item in self.repository.all():
+        for item in items:
             if not item.get("_error") and item.get("status") in {"Doing", "Todo", "Review"}:
                 return {**item, "_reason": "any-open-problem"}
-        return None
-
-    def in_progress_problem(self) -> dict[str, Any] | None:
-        items = [item for item in self.repository.all() if not item.get("_error")]
-        for status in ("Doing", "Review"):
-            found = next((item for item in items if item.get("status") == status), None)
-            if found:
-                return self.compact(found)
         return None
 
     def mistake_summary(self, days: int | None = None, limit: int = 10) -> list[dict[str, Any]]:

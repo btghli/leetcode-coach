@@ -1,4 +1,4 @@
-"""Small browser launcher for the hosted official Agent Chat UI."""
+"""Local workbench entry point and legacy hosted Agent Chat UI launcher."""
 
 from __future__ import annotations
 
@@ -38,6 +38,12 @@ def _wait_for_server(host: str = "127.0.0.1", port: int = 2024, timeout: float =
 
 
 def main() -> int:
+    from .web import main as workbench_main
+    workbench_main()
+    return 0
+
+
+def legacy_main() -> int:
     root = Path(__file__).resolve().parents[2]
     try:
         command = _server_command(root)

@@ -62,9 +62,6 @@ class StudyService:
     def next_problem(self) -> dict[str, Any] | None:
         return self.scheduler.compact(self.scheduler.choose_next())
 
-    def in_progress_problem(self) -> dict[str, Any] | None:
-        return self.scheduler.in_progress_problem()
-
     def mistakes(self, days: int = 14, limit: int = 5) -> list[dict[str, Any]]:
         return self.scheduler.mistake_summary(days=days, limit=limit)
 

@@ -97,7 +97,6 @@ study state.
 | `services.py` | Facades over study and pattern-sweep scripts |
 | `engines.py` | Codex CLI, LangChain, and fake decision engines |
 | `graph.py` | Selection, conversation state, approval, and persistence flow |
-| `tools.py` | Narrow read-only tools exposed to an agent |
 | `cli.py` | Status, planning, sweep, chat, and thread commands |
 | `server.py` | LangGraph Agent Server export |
 | `ui.py` | Local server and Agent Chat launcher |
@@ -159,7 +158,7 @@ coach <--> debug <--> questions
 accepted result
       |
       v
-teach-back assessment
+one-call teach-back conversation/assessment
       |
       v
 complete_attempt preview

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from typing import Annotated, Any, NotRequired, TypedDict
 
 from langchain.messages import AIMessage, AnyMessage, HumanMessage
@@ -13,7 +12,7 @@ from langgraph.types import Command, interrupt
 
 from .attempts import AttemptService
 from .engines import DecisionEngine, LangChainDecisionEngine, LazyLangChainDecisionEngine
-from .message_content import normalize_message_content
+from .message_content import is_accepted_report, normalize_message_content
 from .schemas import AttemptDraft, PendingAction, Phase, ProblemMetadata, TurnDecision
 from .services import MetadataResolver, PatternSweepService, StudyService
 
@@ -59,20 +58,7 @@ def _next_problem_command(text: str) -> bool:
 
 
 def _accepted_command(text: str) -> bool:
-    normalized = " ".join(text.lower().strip().split())
-    if any(token in normalized for token in (
-        "没 ac", "没有 ac", "未 ac", "没过", "未通过", "not ac", "didn't get ac", "did not get ac",
-    )):
-        return False
-    if normalized in {"/ac", "ac", "ac 了", "ac了", "提交通过", "提交通过了", "过了"}:
-        return True
-    if re.fullmatch(r"#?\d+\s*ac\s*(了|通过)?[。.!！]?", normalized):
-        return True
-    if re.search(r"\b(?:got|received|earned)\s+ac\b", normalized):
-        return True
-    if re.search(r"(?:\bno\.?\s*|\bnumber\s*|#)\d+.*\bac\b", normalized):
-        return True
-    return "ac" in normalized and any(token in normalized for token in ("通过了", "accepted"))
+    return is_accepted_report(text)
 
 
 def _approval_chat_command(text: str) -> str | None:
@@ -84,15 +70,6 @@ def _approval_chat_command(text: str) -> str | None:
     if normalized in {"拒绝", "不同意", "reject", "/reject", "不要保存"}:
         return "reject"
     return None
-
-
-def _has_recent_accepted_report(state: CoachState) -> bool:
-    human_messages = (
-        normalize_message_content(message.content)
-        for message in state.get("messages", [])[-12:]
-        if isinstance(message, HumanMessage)
-    )
-    return any(_accepted_command(text) for text in human_messages)
 
 
 class CoachState(TypedDict):
@@ -110,12 +87,11 @@ class CoachState(TypedDict):
     attempt_draft: NotRequired[dict[str, Any] | None]
     teach_back_assessment: NotRequired[dict[str, Any] | None]
     pending_action: NotRequired[dict[str, Any] | None]
-    day_plan: NotRequired[dict[str, Any]]
     thread_id: NotRequired[str]
     last_error: NotRequired[str | None]
     archive_completed: NotRequired[bool]
     attempt_recorded: NotRequired[bool]
-    assessment_requested: NotRequired[bool]
+    teach_back_start_index: NotRequired[int | None]
 
 
 class TrainingGraph:
@@ -137,19 +113,14 @@ class TrainingGraph:
         graph.add_node("resolve_metadata", self.resolve_metadata)
         graph.add_node("choose_mode", self.choose_mode)
         graph.add_node("process_turn", self.process_turn)
-        graph.add_node("recover_accepted", self.recover_accepted)
-        graph.add_node("assess_teach_back", self.assess_teach_back)
         graph.add_node("prepare_persist", self.prepare_persist)
         graph.add_node("pending_notice", self.pending_notice)
         graph.add_node("chat_approval", self.chat_approval)
         graph.add_node("approval", self.approval)
         graph.add_node("persist", self.persist)
-        graph.add_node("sync_sweep", self.sync_sweep)
-        graph.add_node("session_summary", self.session_summary)
 
         graph.add_conditional_edges(START, self.route_start, {
-            "load": "load_context", "turn": "process_turn", "recover": "recover_accepted",
-            "assess": "assess_teach_back",
+            "load": "load_context", "turn": "process_turn",
             "migrate": "prepare_persist",
             "pending": "pending_notice", "chat_approval": "chat_approval",
             "approval": "approval", "end": END,
@@ -163,21 +134,15 @@ class TrainingGraph:
         })
         graph.add_edge("choose_mode", END)
         graph.add_conditional_edges("process_turn", self.route_after_turn, {
-            "select": "select_next", "assess": "assess_teach_back",
-            "persist": "prepare_persist", "end": END,
-        })
-        graph.add_edge("recover_accepted", "assess_teach_back")
-        graph.add_conditional_edges("assess_teach_back", self.route_after_assessment, {
-            "persist": "prepare_persist", "end": END,
+            "select": "select_next", "persist": "prepare_persist", "end": END,
         })
         graph.add_edge("prepare_persist", "approval")
         graph.add_edge("pending_notice", "approval")
-        graph.add_conditional_edges("chat_approval", self.route_after_approval, {"persist": "persist", "sync": "sync_sweep", "ready": "choose_mode", "end": END})
-        graph.add_conditional_edges("approval", self.route_after_approval, {"persist": "persist", "sync": "sync_sweep", "ready": "choose_mode", "end": END})
-        graph.add_conditional_edges("persist", self.route_after_persist, {"prepare": "prepare_persist", "approval": "approval", "ready": "choose_mode", "end": END})
-        graph.add_edge("sync_sweep", "session_summary")
-        graph.add_edge("session_summary", END)
-        return graph.compile(checkpointer=checkpointer)
+        graph.add_conditional_edges("chat_approval", self.route_after_approval, {"approval": "approval", "persist": "persist", "ready": "choose_mode", "end": END})
+        graph.add_conditional_edges("approval", self.route_after_approval, {"approval": "approval", "persist": "persist", "ready": "choose_mode", "end": END})
+        graph.add_conditional_edges("persist", self.route_after_persist, {"ready": "choose_mode", "end": END})
+        from .observability import trace_config
+        return graph.compile(checkpointer=checkpointer).with_config(trace_config(self.study.root))
 
     @staticmethod
     def route_start(state: CoachState) -> str:
@@ -206,8 +171,6 @@ class TrainingGraph:
             return "load"
         if _accepted_command(text):
             return "turn"
-        if not state.get("judge_result") and state.get("selected_problem") and _has_recent_accepted_report(state):
-            return "recover"
         selected = state.get("selected_problem") or {}
         if state.get("routing_mode") == "pattern-sweep" and selected and selected.get("reason") != "pattern-sweep":
             return "load"
@@ -222,7 +185,6 @@ class TrainingGraph:
     def load_context(self, state: CoachState) -> dict[str, Any]:
         return {
             "phase": Phase.LOADING.value,
-            "day_plan": self.study.plan_day(),
             "routing_mode": state.get("routing_mode", "auto"),
             "selected_problem": None if state.get("routing_mode") == "pattern-sweep" else state.get("selected_problem"),
             "hint_level": 0,
@@ -232,16 +194,9 @@ class TrainingGraph:
     def select_next(self, state: CoachState) -> dict[str, Any]:
         if state.get("routing_mode") == "pattern-sweep":
             return self.select_next_sweep(state)
-        status = self.study.status()
-        due = status.get("due_reviews") or []
-        selected = due[0] if due else self.study.in_progress_problem()
-        if selected is None:
-            sweep_item = self.sweep.recommend_next()
-            selected = sweep_item.get("problem") if sweep_item else None
-            if selected is not None:
-                selected = {**selected, "reason": sweep_item.get("kind", "sweep"), "needs_mcp": sweep_item.get("needs_mcp", False)}
-        if selected is None:
-            selected = self.study.next_problem()
+        # Normal routing has one deterministic owner. Pattern curriculum is a
+        # separate lane selected explicitly above.
+        selected = self.study.next_problem()
         if selected is None:
             return {"phase": Phase.COMPLETE.value, "messages": [AIMessage(content="当前没有可训练题目。")], "selected_problem": None}
         return {
@@ -253,6 +208,7 @@ class TrainingGraph:
             "archive_completed": False,
             "judge_result": None,
             "judge_failures": [],
+            "teach_back_start_index": None,
         }
 
     def select_next_sweep(self, state: CoachState) -> dict[str, Any]:
@@ -301,6 +257,7 @@ class TrainingGraph:
             "archive_completed": False,
             "judge_result": None,
             "judge_failures": [],
+            "teach_back_start_index": None,
         }
 
     @staticmethod
@@ -390,6 +347,21 @@ class TrainingGraph:
             decision = TurnDecision(action="quit", response="已保存当前对话 checkpoint，下次可用同一 thread 继续。")
         elif _accepted_command(text):
             decision = TurnDecision(action="accepted", response="收到 AC。请完成 teach-back：说明 invariant、复杂度、最容易遗漏的边界，以及何时不适用。")
+        elif state.get("phase") == Phase.TEACH_BACK.value and state.get("judge_result") == "AC":
+            teach_back = self.engine.assess_teach_back(state)
+            if teach_back.action == "continue":
+                return {
+                    "phase": Phase.TEACH_BACK.value,
+                    "messages": [AIMessage(content=teach_back.response)],
+                    "last_error": None,
+                }
+            assessment = teach_back.assessment
+            return {
+                "phase": Phase.PERSISTING.value if assessment.complete else Phase.TEACH_BACK.value,
+                "teach_back_assessment": assessment.model_dump(),
+                "messages": [AIMessage(content=teach_back.response)],
+                "last_error": None,
+            }
         else:
             decision = self.engine.decide(state)
         updates: dict[str, Any] = {"messages": [AIMessage(content=decision.response)]}
@@ -410,16 +382,11 @@ class TrainingGraph:
                 judge_failures=failures,
             )
         elif decision.action == "accepted":
-            updates.update(phase=Phase.TEACH_BACK.value, judge_result="AC", assessment_requested=False)
-        elif decision.action == "teach_back":
-            if state.get("judge_result") != "AC":
-                updates.update(
-                    phase=phase,
-                    messages=[AIMessage(content="我可以评估这段总结，但需要先确认本题已有 AC 判题结果。")],
-                    last_error="teach_back_before_ac",
-                )
-            else:
-                updates.update(phase=Phase.TEACH_BACK.value, assessment_requested=True, last_error=None)
+            updates.update(
+                phase=Phase.TEACH_BACK.value,
+                judge_result="AC",
+                teach_back_start_index=len(state.get("messages", [])),
+            )
         elif decision.action == "select_next":
             updates.update(
                 phase=Phase.SELECTING.value,
@@ -432,7 +399,7 @@ class TrainingGraph:
                 teach_back_assessment=None,
                 attempt_recorded=False,
                 archive_completed=False,
-                assessment_requested=False,
+                teach_back_start_index=None,
                 last_error=None,
             )
         elif decision.action == "switch_mode":
@@ -456,7 +423,7 @@ class TrainingGraph:
                     teach_back_assessment=None,
                     attempt_recorded=False,
                     archive_completed=False,
-                    assessment_requested=False,
+                    teach_back_start_index=None,
                     sweep_category=None,
                     sweep_subpattern=None,
                     sweep_card_category=None,
@@ -465,30 +432,6 @@ class TrainingGraph:
         elif decision.action == "quit":
             updates["phase"] = Phase.COMPLETE.value
         return updates
-
-    def assess_teach_back(self, state: CoachState) -> dict[str, Any]:
-        decision = self.engine.assess_teach_back(state)
-        assessment = decision.assessment
-        return {
-            "phase": Phase.PERSISTING.value if assessment.complete else Phase.TEACH_BACK.value,
-            "teach_back_assessment": assessment.model_dump(),
-            "assessment_requested": False,
-            "messages": [AIMessage(content=decision.response)],
-            "last_error": None,
-        }
-
-    @staticmethod
-    def recover_accepted(state: CoachState) -> dict[str, Any]:
-        return {
-            "phase": Phase.TEACH_BACK.value,
-            "judge_result": "AC",
-            "messages": [AIMessage(content="已从近期对话恢复遗漏的 AC 判题事件，正在重新评估 teach-back。")],
-            "last_error": None,
-        }
-
-    @staticmethod
-    def route_after_assessment(state: CoachState) -> str:
-        return "persist" if state.get("phase") == Phase.PERSISTING else "end"
 
     @staticmethod
     def _can_advance_subpattern(state: CoachState) -> bool:
@@ -505,8 +448,6 @@ class TrainingGraph:
     def route_after_turn(state: CoachState) -> str:
         if state.get("phase") == Phase.SELECTING and not state.get("selected_problem"):
             return "select"
-        if state.get("assessment_requested"):
-            return "assess"
         return "persist" if state.get("phase") == Phase.PERSISTING else "end"
 
     def prepare_persist(self, state: CoachState) -> dict[str, Any]:
@@ -571,11 +512,15 @@ class TrainingGraph:
             "last_error": "approval_required",
         }
 
-    @staticmethod
-    def chat_approval(state: CoachState) -> dict[str, Any]:
+    def chat_approval(self, state: CoachState) -> dict[str, Any]:
         pending = state.get("pending_action") or {}
         decision = _approval_chat_command(_last_human_text(state))
         if decision == "approve":
+            if pending.get("action") not in {"initialize_problem", "complete_attempt"}:
+                # An old checkpoint may still contain one of the former
+                # multi-step writes. Replace it with the canonical grouped
+                # preview and require approval of that complete operation.
+                return self.prepare_persist(state)
             return {
                 "phase": Phase.PERSISTING.value,
                 "messages": [AIMessage(content=f"已批准：{pending.get('description') or pending.get('action')}。")],
@@ -595,11 +540,11 @@ class TrainingGraph:
             return {"phase": Phase.COACHING.value}
         response = interrupt(pending)
         decision = response.get("type", "reject") if isinstance(response, dict) else str(response)
+        if decision in {"approve", "edit"} and pending.get("action") not in {"initialize_problem", "complete_attempt"}:
+            return self.prepare_persist(state)
         if decision == "edit" and isinstance(response, dict) and isinstance(response.get("arguments"), dict):
             pending = {**pending, "arguments": response["arguments"]}
-            if pending["action"] == "finish_attempt":
-                AttemptDraft.model_validate(pending["arguments"])
-            elif pending["action"] == "complete_attempt":
+            if pending["action"] == "complete_attempt":
                 AttemptDraft.model_validate(pending["arguments"].get("attempt"))
             elif pending["action"] == "initialize_problem":
                 ProblemMetadata.model_validate(pending["arguments"])
@@ -615,9 +560,10 @@ class TrainingGraph:
 
     @staticmethod
     def route_after_approval(state: CoachState) -> str:
+        if state.get("phase") == Phase.AWAITING_APPROVAL:
+            return "approval"
         if state.get("phase") == Phase.PERSISTING:
-            pending = state.get("pending_action") or {}
-            return "sync" if pending.get("action") == "sync_pattern_sweep" else "persist"
+            return "persist"
         return "end" if state.get("phase") == Phase.COMPLETE else "ready"
 
     def persist(self, state: CoachState) -> dict[str, Any]:
@@ -635,21 +581,27 @@ class TrainingGraph:
                     sync_pattern_sweep=bool(arguments.get("sync_pattern_sweep", True)),
                     log_session=bool(arguments.get("log_session", True)),
                 )
+                # Recompute from the deterministic scheduler only after the
+                # grouped write succeeds. This lets the coach hand off the
+                # next activity without creating a competing lesson record.
+                next_plan = self.study.plan_day()
+                next_item = next_plan.get("recommended_next") or {}
+                next_title = next_item.get("title") or next_item.get("slug")
+                handoff = (
+                    f"下一步建议：{next_title}（{next_plan.get('suggested_mode', 'guided-solve')}）。"
+                    if next_title else "今天没有其他待安排的题目。"
+                )
                 return {
                     "pending_action": None,
                     "phase": Phase.COMPLETE.value,
                     "attempt_recorded": result.attempt_recorded,
                     "archive_completed": result.archive_completed or state.get("archive_completed", False),
                     "last_error": None,
-                    "messages": [AIMessage(content="训练记录、solution 归档（如适用）、pattern sweep 和 session 已一次完成。可以进入下一题。")],
+                    "messages": [AIMessage(content=(
+                        "训练记录、solution 归档（如适用）、pattern sweep 和 session 已一次完成。"
+                        + handoff + "准备好后点击“下一题”或发送“下一题”。"
+                    ))],
                 }
-            if pending.get("action") == "finish_attempt":
-                self.study.finish_attempt(AttemptDraft.model_validate(pending["arguments"]))
-                sync = PendingAction(action="sync_pattern_sweep", arguments={}, description="同步 pattern sweep coverage 和受控 sweep-map 区域")
-                return {"pending_action": sync.model_dump(), "phase": Phase.AWAITING_APPROVAL.value, "attempt_recorded": True, "last_error": None}
-            if pending.get("action") == "archive_solution":
-                self.study.archive_solution(pending["arguments"]["slug"], pending["arguments"].get("source"))
-                return {"pending_action": None, "phase": Phase.PERSISTING.value, "archive_completed": True, "last_error": None}
             raise ValueError(f"Unsupported pending action: {pending.get('action')}")
         except Exception as exc:
             return {"phase": Phase.COACHING.value, "pending_action": None, "last_error": str(exc), "messages": [AIMessage(content=f"写入失败：{exc}")]}
@@ -658,24 +610,7 @@ class TrainingGraph:
     def route_after_persist(state: CoachState) -> str:
         if not state.get("last_error") and state.get("phase") == Phase.SELECTING:
             return "ready"
-        if not state.get("last_error") and state.get("phase") == Phase.AWAITING_APPROVAL:
-            return "approval"
-        if not state.get("last_error") and state.get("archive_completed") and not state.get("attempt_draft"):
-            return "prepare"
         return "end"
-
-    def sync_sweep(self, state: CoachState) -> dict[str, Any]:
-        self.sweep.sync()
-        return {"phase": Phase.PERSISTING.value, "pending_action": None}
-
-    def session_summary(self, state: CoachState) -> dict[str, Any]:
-        problem = state.get("selected_problem") or {}
-        draft = state.get("attempt_draft") or {}
-        self.study.log_session(
-            problems=[problem.get("slug", "")], summary="完成 AC 与 teach-back",
-            next_step="按 next_review 复习", mode=state.get("training_mode", "guided-solve"), quality=int(draft.get("quality", 3)),
-        )
-        return {"phase": Phase.COMPLETE.value, "messages": [AIMessage(content="训练记录和 pattern sweep 已同步。本轮完成。")], "pending_action": None}
 
 
 __all__ = [

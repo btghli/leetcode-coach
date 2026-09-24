@@ -22,8 +22,6 @@ class FakeEngine:
 
     def decide(self, state):
         self.calls += 1
-        if state.get("judge_result") == "AC":
-            return TurnDecision(action="teach_back", response="正在评估你的复盘。")
         return TurnDecision(action="hint", response="先考虑已经看过的数字。")
 
     def assess_teach_back(self, state):
@@ -57,8 +55,6 @@ class SwitchModeEngine:
 
 class JudgeFailureEngine(FakeEngine):
     def decide(self, state):
-        if state.get("judge_result") == "AC":
-            return TurnDecision(action="teach_back", response="正在评估你的复盘。")
         return TurnDecision(action="judge_failed", judge_failure="WA", response="先检查最小失败样例。")
 
 
@@ -103,6 +99,20 @@ def test_chat_approval_requires_an_explicit_command():
     assert _approval_chat_command("下一题") is None
 
 
+def test_coaching_remains_model_driven_after_multiple_turns(study_repo):
+    engine = FakeEngine()
+    training = TrainingGraph(
+        StudyService(study_repo), PatternSweepService(study_repo), MetadataResolver(StudyService(study_repo), PatternSweepService(study_repo)), engine,
+    )
+    state = {
+        "phase": "coaching", "hint_level": 2,
+        "messages": [HumanMessage(content="我准备写代码")],
+    }
+    result = training.process_turn(state)
+    assert engine.calls == 1
+    assert "已经看过的数字" in result["messages"][0].content
+
+
 def test_next_problem_is_a_narrow_explicit_control():
     assert _next_problem_command("下一题")
     assert _next_problem_command("next problem")
@@ -133,6 +143,36 @@ def test_next_problem_is_a_narrow_explicit_control():
     }) == "migrate"
 
 
+async def test_legacy_pending_write_is_normalized_to_one_grouped_preview(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
+    graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine()).build(InMemorySaver())
+
+    result = await graph.ainvoke({
+        "messages": [HumanMessage(content="继续")],
+        "phase": "awaiting_approval",
+        "selected_problem": {"slug": "two-sum", "title": "Two Sum"},
+        "training_mode": "guided-solve",
+        "judge_result": "AC",
+        "teach_back_assessment": {
+            "invariant_correct": True,
+            "complexity_correct": True,
+            "edge_case_identified": True,
+            "pattern_boundary_understood": True,
+            "suggested_quality": 4,
+            "feedback": "完整",
+        },
+        "pending_action": {
+            "action": "archive_solution",
+            "arguments": {"slug": "two-sum"},
+            "description": "legacy archive",
+        },
+    }, config={"configurable": {"thread_id": "legacy-normalization"}}, version="v2")
+
+    assert result.interrupts
+    assert result.value["pending_action"]["action"] == "complete_attempt"
+
+
 async def test_full_training_loop_with_interrupt(study_repo):
     study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
     study.initialize_problem(ProblemMetadata(
@@ -155,6 +195,25 @@ async def test_full_training_loop_with_interrupt(study_repo):
     assert not completed.interrupts
     assert completed.value["phase"] == "complete"
     assert study.problem_context("two-sum")["metadata"]["mastery"] == "solid"
+
+
+async def test_selection_resumes_in_progress_before_due_review(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    for metadata in (
+        ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy", lists=["example"]),
+        ProblemMetadata(id=49, slug="group-anagrams", title="Group Anagrams", difficulty="Medium", lists=["example"]),
+    ):
+        study.initialize_problem(metadata)
+    due_note = study.repository.find("group-anagrams")[0]
+    open_note = study.repository.find("two-sum")[0]
+    study.module.update_note_meta(due_note, {"status": "AC", "next_review": "2020-01-01"})
+    study.module.update_note_meta(open_note, {"status": "Doing"})
+    graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine()).build(InMemorySaver())
+
+    result = await graph.ainvoke({"messages": []}, config={"configurable": {"thread_id": "resume-first"}}, version="v2")
+
+    assert result.value["selected_problem"]["slug"] == "two-sum"
+    assert result.value["training_mode"] == "guided-solve"
 
 
 async def test_judge_failures_survive_later_ac_and_are_persisted(study_repo):
@@ -286,8 +345,6 @@ def test_unified_completion_rolls_back_every_protected_write_on_failure(study_re
 async def test_switch_to_pattern_sweep_reselects_and_persists_mode(study_repo, monkeypatch):
     study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
     study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
-    monkeypatch.setattr(study, "in_progress_problem", lambda: None)
-    monkeypatch.setattr(study, "next_problem", lambda: None)
     item = {
         "kind": "sweep",
         "category": {"slug": "array-hash", "title": "数组与哈希"},
@@ -438,7 +495,7 @@ def test_next_subpattern_is_guarded_until_persistence(study_repo):
     assert "还不能进入" in updates["messages"][0].content
 
 
-async def test_missed_english_ac_is_recovered_before_teach_back_assessment(study_repo):
+async def test_old_ac_text_is_not_recovered_for_a_later_turn(study_repo):
     study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
     study.initialize_problem(ProblemMetadata(id=19, slug="remove-nth-node-from-end-of-list", title="Remove Nth Node", difficulty="Medium"))
     graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine()).build(InMemorySaver())
@@ -460,8 +517,102 @@ async def test_missed_english_ac_is_recovered_before_teach_back_assessment(study
         "judge_result": None,
     }, config={"configurable": {"thread_id": "recover-english-ac"}}, version="v2")
 
-    assert result.interrupts
-    assert result.value["judge_result"] == "AC"
-    assert result.value["phase"] == "awaiting_approval"
-    assert result.value["teach_back_assessment"]["invariant_correct"] is True
-    assert result.value["pending_action"]["action"] == "complete_attempt"
+    assert not result.interrupts
+    assert result.value["judge_result"] is None
+    assert result.value["phase"] == "coaching"
+    assert result.value.get("pending_action") is None
+
+
+async def test_teach_back_uses_one_model_call_and_emits_one_reply(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
+
+    class CountingEngine(FakeEngine):
+        def __init__(self):
+            super().__init__()
+            self.assessment_calls = 0
+
+        def assess_teach_back(self, state):
+            self.assessment_calls += 1
+            return TeachBackDecision(
+                action="teach_back",
+                response="只补充复杂度。",
+                assessment=TeachBackAssessment(
+                    invariant_correct=True,
+                    complexity_correct=False,
+                    edge_case_identified=False,
+                    pattern_boundary_understood=False,
+                    suggested_quality=1,
+                    feedback="证据不完整",
+                ),
+            )
+
+    engine = CountingEngine()
+    graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), engine).build(InMemorySaver())
+    config = {"configurable": {"thread_id": "single-teach-back-call"}}
+    await graph.ainvoke({"messages": []}, config=config, version="v2")
+    await graph.ainvoke({"messages": [HumanMessage(content="/ac")]}, config=config, version="v2")
+    result = await graph.ainvoke({"messages": [HumanMessage(content="不变量是已经处理的元素都已分组")]}, config=config, version="v2")
+
+    assert engine.calls == 0
+    assert engine.assessment_calls == 1
+    assert result.value["messages"][-1].content == "只补充复杂度。"
+    assert result.value["messages"][-2].content == "不变量是已经处理的元素都已分组"
+
+
+def test_teach_back_question_does_not_replace_existing_assessment(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+
+    class QuestionEngine(FakeEngine):
+        def assess_teach_back(self, state):
+            return TeachBackDecision(
+                action="continue",
+                response="不变量就是每一步都保持成立的性质。",
+                assessment=TeachBackAssessment(
+                    invariant_correct=False,
+                    complexity_correct=False,
+                    edge_case_identified=False,
+                    pattern_boundary_understood=False,
+                    suggested_quality=0,
+                    feedback="这不是新证据",
+                ),
+            )
+
+    existing = {
+        "invariant_correct": True,
+        "complexity_correct": False,
+        "edge_case_identified": False,
+        "pattern_boundary_understood": False,
+        "suggested_quality": 1,
+        "feedback": "已说明不变量",
+    }
+    updates = TrainingGraph(study, sweep, MetadataResolver(study, sweep), QuestionEngine()).process_turn({
+        "phase": "teach_back",
+        "judge_result": "AC",
+        "teach_back_assessment": existing,
+        "messages": [HumanMessage(content="什么是不变量？")],
+    })
+
+    assert updates["phase"] == "teach_back"
+    assert "teach_back_assessment" not in updates
+    assert "不变量" in updates["messages"][0].content
+
+
+async def test_auto_routing_does_not_fall_through_to_pattern_sweep(study_repo, monkeypatch):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    monkeypatch.setattr(study, "next_problem", lambda: None)
+    monkeypatch.setattr(sweep, "recommend_next", lambda: {
+        "category": {"slug": "array-hash", "title": "数组与哈希"},
+        "subpattern": {"slug": "frequency-index", "title": "计数与索引"},
+        "problem": {"slug": "two-sum", "title": "Two Sum"},
+    })
+    graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine()).build(InMemorySaver())
+
+    result = await graph.ainvoke(
+        {"messages": [], "routing_mode": "auto"},
+        config={"configurable": {"thread_id": "auto-is-not-sweep"}},
+        version="v2",
+    )
+
+    assert result.value["phase"] == "complete"
+    assert result.value["selected_problem"] is None

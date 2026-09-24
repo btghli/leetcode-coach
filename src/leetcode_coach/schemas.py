@@ -30,15 +30,6 @@ class ProblemMetadata(BaseModel):
     lists: list[str] = Field(default_factory=list)
 
 
-class DayPlan(BaseModel):
-    date: str
-    active_list: str
-    reviews: list[dict[str, Any]] = Field(default_factory=list)
-    new_or_open: list[dict[str, Any]] = Field(default_factory=list)
-    recommended_next: dict[str, Any] | None = None
-    suggested_mode: str = "guided-solve"
-
-
 class AttemptDraft(BaseModel):
     slug: str
     status: Literal["AC", "Review"] = "AC"
@@ -67,15 +58,7 @@ class TeachBackAssessment(BaseModel):
 
 
 class PendingAction(BaseModel):
-    # Legacy actions remain valid so existing checkpoints can be migrated into
-    # the unified complete_attempt transaction without being discarded.
-    action: Literal[
-        "initialize_problem",
-        "complete_attempt",
-        "finish_attempt",
-        "archive_solution",
-        "sync_pattern_sweep",
-    ]
+    action: Literal["initialize_problem", "complete_attempt"]
     arguments: dict[str, Any]
     description: str
 
@@ -85,7 +68,7 @@ RoutingMode = Literal["auto", "pattern-sweep"]
 
 class TurnDecision(BaseModel):
     action: Literal[
-        "continue", "hint", "judge_failed", "accepted", "teach_back",
+        "continue", "hint", "judge_failed", "accepted",
         "select_next", "switch_mode", "quit",
     ]
     response: str
@@ -94,8 +77,9 @@ class TurnDecision(BaseModel):
 
 
 class TeachBackDecision(BaseModel):
-    """Phase-specific evaluation; completion is derived from the assessment."""
+    """One teach-back-phase turn, including intent and optional evidence updates."""
 
+    action: Literal["continue", "teach_back"] = "teach_back"
     assessment: TeachBackAssessment
     response: str
 
@@ -111,5 +95,6 @@ class DecisionContext(BaseModel):
     judge_result: str | None = None
     learner_message: str
     recent_messages: list[dict[str, str]] = Field(default_factory=list)
+    teach_back_evidence: list[str] = Field(default_factory=list)
     problem_context: dict[str, Any] | None = None
     study_summary: dict[str, Any] = Field(default_factory=dict)

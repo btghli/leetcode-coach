@@ -8,6 +8,7 @@ from pathlib import Path
 from langchain.messages import AIMessage, HumanMessage
 
 from leetcode_coach.engines import (
+    CODEX_DECISION_INSTRUCTIONS,
     CodexCliDecisionEngine,
     build_decision_context,
     build_study_summary,
@@ -98,7 +99,6 @@ def test_codex_schema_is_strict_for_every_object():
 
     assert_strict(schema)
     assert "switch_mode" in schema["properties"]["action"]["enum"]
-    assert "teach_back" in schema["properties"]["action"]["enum"]
     assert "select_next" in schema["properties"]["action"]["enum"]
     assert_strict(strict_output_schema(TeachBackDecision))
 
@@ -106,9 +106,16 @@ def test_codex_schema_is_strict_for_every_object():
 def test_decision_context_has_only_bounded_recent_messages(study_repo: Path):
     messages = [HumanMessage(content=f"message-{index}") for index in range(20)]
     context = build_decision_context({"phase": "coaching", "messages": messages}, StudyService(study_repo))
-    assert len(context.recent_messages) == 12
-    assert context.recent_messages[0]["content"] == "message-8"
+    assert len(context.recent_messages) == 4
+    assert context.recent_messages[0]["content"] == "message-16"
     assert context.learner_message == "message-19"
+
+
+def test_codex_prompt_uses_compact_decision_instructions(study_repo: Path):
+    context = build_decision_context({"phase": "coaching", "messages": [HumanMessage(content="提示")]}, StudyService(study_repo))
+    prompt = CodexCliDecisionEngine._prompt(context)
+    assert CODEX_DECISION_INSTRUCTIONS in prompt
+    assert "Use progressive disclosure" not in prompt
 
 
 def test_decision_context_truncates_oversized_message(study_repo: Path):
@@ -116,7 +123,7 @@ def test_decision_context_truncates_oversized_message(study_repo: Path):
         {"phase": "coaching", "messages": [HumanMessage(content="x" * 10_000)]},
         StudyService(study_repo),
     )
-    assert len(context.learner_message) < 10_000
+    assert len(context.learner_message) < 2_000
     assert context.learner_message.endswith("[truncated]")
 
 
@@ -134,6 +141,7 @@ def test_codex_uses_phase_specific_teach_back_schema(study_repo: Path):
     def fake_runner(command, **kwargs):
         observed.update(command=command, kwargs=kwargs)
         output = {
+            "action": "teach_back",
             "assessment": {
                 "invariant_correct": True,
                 "complexity_correct": True,
@@ -158,6 +166,21 @@ def test_codex_uses_phase_specific_teach_back_schema(study_repo: Path):
     assert "TeachBackDecision" in observed["kwargs"]["input"]
 
 
+def test_teach_back_evidence_contains_only_human_messages_after_ac(study_repo: Path):
+    context = build_decision_context({
+        "phase": "teach_back",
+        "teach_back_start_index": 2,
+        "messages": [
+            HumanMessage(content="旧题回答"),
+            HumanMessage(content="/ac"),
+            AIMessage(content="请开始复盘"),
+            HumanMessage(content="不变量是已处理元素保持正确分组"),
+        ],
+    }, StudyService(study_repo))
+
+    assert context.teach_back_evidence == ["不变量是已处理元素保持正确分组"]
+
+
 def test_study_summary_exposes_progress_counts_without_root_path(study_repo: Path):
     study = StudyService(study_repo)
     study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
@@ -165,3 +188,13 @@ def test_study_summary_exposes_progress_counts_without_root_path(study_repo: Pat
     assert summary["problem_count"] == 1
     assert summary["status_counts"]["Todo"] == 1
     assert "root" not in summary
+
+
+def test_study_summary_strips_paths_and_attempt_details(study_repo: Path):
+    study = StudyService(study_repo)
+    study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))
+    summary = build_study_summary(study)
+    for item in [*summary["due_reviews"], summary["recommended_next"], *summary["new_or_open"]]:
+        assert "path" not in item
+        assert "stats" not in item
+        assert "mistake_tags" not in item

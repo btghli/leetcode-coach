@@ -13,6 +13,8 @@ dependencies = [
   "langgraph>=1.0,<2",
   "langgraph-checkpoint-sqlite>=3,<4",
   "pydantic>=2.7,<3",
+  "langsmith>=0.10.15,<1",
+  "python-dotenv>=1,<2",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +30,9 @@ leetcode-coach-ui = "leetcode_coach.ui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+leetcode_coach = ["static/*.html", "static/*.css", "static/*.js"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
