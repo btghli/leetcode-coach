@@ -144,6 +144,17 @@ def test_next_problem_is_a_narrow_explicit_control():
     }) == "migrate"
 
 
+def test_unknown_legacy_pending_action_is_migrated():
+    assert TrainingGraph.route_start({
+        "messages": [HumanMessage(content="继续")],
+        "pending_action": {
+            "action": "session_summary",
+            "arguments": {},
+            "description": "unknown legacy write",
+        },
+    }) == "migrate"
+
+
 async def test_legacy_pending_write_is_normalized_to_one_grouped_preview(study_repo):
     study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
     study.initialize_problem(ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy"))

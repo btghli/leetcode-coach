@@ -17,6 +17,9 @@ from .schemas import AttemptDraft, PendingAction, Phase, ProblemMetadata, TurnDe
 from .services import MetadataResolver, PatternSweepService, StudyService
 
 
+CANONICAL_PENDING_ACTIONS = frozenset({"initialize_problem", "complete_attempt"})
+
+
 def _last_human_text(state: CoachState) -> str:
     last = next(
         (message for message in reversed(state.get("messages", [])) if isinstance(message, HumanMessage)),
@@ -148,7 +151,7 @@ class TrainingGraph:
     def route_start(state: CoachState) -> str:
         if state.get("pending_action"):
             pending = state.get("pending_action") or {}
-            if pending.get("action") in {"finish_attempt", "archive_solution", "sync_pattern_sweep"}:
+            if pending.get("action") not in CANONICAL_PENDING_ACTIONS:
                 # Collapse completion checkpoints created by the previous graph
                 # into the new single preview/approval transaction.
                 return "migrate"
@@ -513,34 +516,30 @@ class TrainingGraph:
         }
 
     def chat_approval(self, state: CoachState) -> dict[str, Any]:
-        pending = state.get("pending_action") or {}
         decision = _approval_chat_command(_last_human_text(state))
-        if decision == "approve":
-            if pending.get("action") not in {"initialize_problem", "complete_attempt"}:
-                # An old checkpoint may still contain one of the former
-                # multi-step writes. Replace it with the canonical grouped
-                # preview and require approval of that complete operation.
-                return self.prepare_persist(state)
-            return {
-                "phase": Phase.PERSISTING.value,
-                "messages": [AIMessage(content=f"已批准：{pending.get('description') or pending.get('action')}。")],
-                "last_error": None,
-            }
-        is_init = pending.get("action") == "initialize_problem"
-        return {
-            "pending_action": None,
-            "phase": Phase.COMPLETE.value if is_init else Phase.COACHING.value,
-            "messages": [AIMessage(content="已拒绝写入；学习数据未改变。")],
-            "last_error": None,
-        }
+        return self._resolve_approval(state, {"type": decision or "reject"}, announce=True)
 
     def approval(self, state: CoachState) -> dict[str, Any]:
         pending = state.get("pending_action")
         if not pending:
             return {"phase": Phase.COACHING.value}
         response = interrupt(pending)
+        return self._resolve_approval(state, response)
+
+    def _resolve_approval(
+        self,
+        state: CoachState,
+        response: Any,
+        *,
+        announce: bool = False,
+    ) -> dict[str, Any]:
+        """Apply one approval response for chat and interrupt entry points."""
+
+        pending = state.get("pending_action") or {}
         decision = response.get("type", "reject") if isinstance(response, dict) else str(response)
-        if decision in {"approve", "edit"} and pending.get("action") not in {"initialize_problem", "complete_attempt"}:
+        if decision in {"approve", "edit"} and pending.get("action") not in CANONICAL_PENDING_ACTIONS:
+            # Old checkpoints may contain one of the former multi-step writes.
+            # Replace it with the grouped preview and require fresh approval.
             return self.prepare_persist(state)
         if decision == "edit" and isinstance(response, dict) and isinstance(response.get("arguments"), dict):
             pending = {**pending, "arguments": response["arguments"]}
@@ -550,12 +549,16 @@ class TrainingGraph:
                 ProblemMetadata.model_validate(pending["arguments"])
             return {"pending_action": pending, "phase": Phase.PERSISTING.value}
         if decision == "approve":
-            return {"phase": Phase.PERSISTING.value}
+            updates: dict[str, Any] = {"phase": Phase.PERSISTING.value, "last_error": None}
+            if announce:
+                updates["messages"] = [AIMessage(content=f"已批准：{pending.get('description') or pending.get('action')}。")]
+            return updates
         is_init = pending.get("action") == "initialize_problem"
         return {
             "pending_action": None,
             "phase": Phase.COMPLETE.value if is_init else Phase.COACHING.value,
             "messages": [AIMessage(content="已拒绝写入；学习数据未改变。")],
+            "last_error": None,
         }
 
     @staticmethod
