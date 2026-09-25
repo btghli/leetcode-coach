@@ -9,6 +9,7 @@ from langchain.messages import AIMessage, HumanMessage
 
 from leetcode_coach.engines import (
     CODEX_DECISION_INSTRUCTIONS,
+    TEACH_BACK_INSTRUCTIONS,
     CodexCliDecisionEngine,
     build_decision_context,
     build_study_summary,
@@ -116,6 +117,26 @@ def test_codex_prompt_uses_compact_decision_instructions(study_repo: Path):
     prompt = CodexCliDecisionEngine._prompt(context)
     assert CODEX_DECISION_INSTRUCTIONS in prompt
     assert "Use progressive disclosure" not in prompt
+    assert "do not split one understood concept" in prompt
+    assert "redo-from-memory" in prompt
+
+
+def test_teach_back_prompt_avoids_retesting_supported_evidence(study_repo: Path):
+    context = build_decision_context(
+        {
+            "phase": "teach_back",
+            "judge_result": "AC",
+            "messages": [HumanMessage(content="计数键是字符频次元组，复杂度 O(nk)")],
+        },
+        StudyService(study_repo),
+    )
+
+    prompt = CodexCliDecisionEngine._teach_back_prompt(context)
+
+    assert TEACH_BACK_INSTRUCTIONS in prompt
+    assert "never ask the learner to restate them" in prompt
+    assert "at most two short sentences" in prompt
+    assert "half-finished sentence with one blank" in prompt
 
 
 def test_decision_context_truncates_oversized_message(study_repo: Path):

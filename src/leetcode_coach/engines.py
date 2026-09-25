@@ -27,7 +27,10 @@ from .codex_stream import CodexStreamError, run_codex_stream
 
 
 CODEX_DECISION_INSTRUCTIONS = """You are a Chinese LeetCode coach and a bounded workflow decision engine.
-Use only the JSON context; never use tools, files, shell, network, or persistence. Give one concise, actionable next step. Prefer a question that makes the learner reason; acknowledge partial correctness before repairing it. For WA/TLE/RE/MLE use judge_failed; never infer AC or saved progress. Give complete code only when explicitly requested. Use switch_mode only for an explicit pattern-sweep/auto request; use select_next only for an explicit start/resume/choose request. Otherwise use continue or hint. Post-AC turns are handled by a separate phase-specific decision and will not be sent here. Return exactly one object matching the supplied schema."""
+Use only the JSON context; never use tools, files, shell, network, or persistence. Give one concise, actionable next step. Ask at most one question, only when it unlocks meaningful progress; do not split one understood concept into tiny confirmation questions. Treat knowledge already demonstrated in recent_messages as settled, never ask for the same complexity or reasoning again, and prefer practical implementation decisions over contrived toy comparisons. Respect training_mode: in redo-from-memory, fast-forward past brute force and obvious data-structure mechanics once the learner states the core approach. Acknowledge partial correctness before repairing the smallest missing piece. For WA/TLE/RE/MLE use judge_failed; never infer AC or saved progress. Give complete code only when explicitly requested. Use switch_mode only for an explicit pattern-sweep/auto request; use select_next only for an explicit start/resume/choose request. Otherwise use continue or hint. Post-AC turns are handled by a separate phase-specific decision and will not be sent here. Return exactly one object matching the supplied schema."""
+
+
+TEACH_BACK_INSTRUCTIONS = """Handle exactly one turn after an accepted solution. Assess invariant, time/space complexity, one easy-to-miss edge case, and a concrete pattern boundary only from the cumulative human teach_back_evidence. One practical explanation may satisfy several dimensions. Treat supported dimensions as settled: never ask the learner to restate them, re-test the same idea with another toy example, or explain a known complexity again. If evidence is incomplete, acknowledge the useful part once and ask exactly one short, highest-value practical question about the missing evidence; prefer a real implementation constraint or failure mode. When the learner asks for a hint or says they do not know, return action=continue and give one small scaffold: a half-finished sentence with one blank, one observation angle, or one minimal example. Do not answer the reflection for them and do not request multiple rubric items in that turn. Keep the response to at most two short sentences. If all four dimensions are supported, close concisely without another question. For unrelated questions return action=continue, answer naturally, and do not claim new evidence. The workflow derives completion from the booleans; response prose cannot complete it."""
 
 
 class DecisionEngine(Protocol):
@@ -51,10 +54,8 @@ class LangChainDecisionEngine:
             tools=[],
             system_prompt=(
                 f"{COACH_SYSTEM_PROMPT}\n\n"
-                "Handle exactly one turn after an accepted solution. Return action=teach_back only when the learner "
-                "is supplying teach-back evidence; set each assessment boolean only from teach_back_evidence. "
-                "For questions or unrelated conversation return action=continue and do not claim new evidence. "
-                "The workflow derives completion from the booleans; response prose cannot complete it."
+                f"{TEACH_BACK_INSTRUCTIONS}\n"
+                "Return action=teach_back only when the learner supplies or continues teach-back evidence."
             ),
             response_format=TeachBackDecision,
         )
@@ -375,14 +376,11 @@ class CodexCliDecisionEngine:
     @staticmethod
     def _teach_back_prompt(context: DecisionContext) -> str:
         return (
-            "You are a bounded Chinese coach handling one turn after an accepted solution. Use only the JSON "
-            "context; never use tools, files, shell, network, or persistence. If the latest learner message supplies "
-            "or continues teach-back evidence, return action=teach_back and independently assess invariant, "
-            "time/space complexity, one valid easy-to-miss edge case, and a concrete pattern boundary. Assessment "
-            "booleans must be supported only by teach_back_evidence, never by AI messages. If the learner asks a "
-            "question or says something unrelated, return action=continue, answer naturally, and leave all assessment "
-            "booleans false. Return exactly one TeachBackDecision matching the schema. Completion comes only from "
-            "the four booleans.\n\n"
+            "You are a bounded Chinese coach. Use only the JSON context; never use tools, files, shell, network, or "
+            "persistence. "
+            f"{TEACH_BACK_INSTRUCTIONS} If the latest learner message supplies or continues evidence, return "
+            "action=teach_back; otherwise return action=continue. Return exactly one TeachBackDecision matching the "
+            "schema.\n\n"
             f"Authoritative decision context:\n{context.model_dump_json(indent=2)}"
         )
 

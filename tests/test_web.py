@@ -63,11 +63,45 @@ async def test_rejection_does_not_save(workbench):
     assert workbench.overview()['status']['status_counts']['AC'] == 0
 
 
+async def test_structured_judge_and_next_actions_bypass_free_text_intent(workbench):
+    workbench.study.initialize_problem(ProblemMetadata(
+        id=49,
+        slug='group-anagrams',
+        title='Group Anagrams',
+        difficulty='Medium',
+        lists=['example'],
+    ))
+    (workbench.study.root / 'lists/example.md').write_text(
+        '- `two-sum`\n- `group-anagrams`\n',
+        encoding='utf-8',
+    )
+    started = await workbench.conversation('structured-actions', {'action': 'start'})
+    assert started['selected_problem']['slug'] == 'two-sum'
+
+    accepted = await workbench.conversation(
+        'structured-actions',
+        {'action': 'judge', 'result': 'AC'},
+    )
+    assert accepted['phase'] == 'teach_back'
+    assert accepted['judge_result'] == 'AC'
+
+    guarded = await workbench.conversation('structured-actions', {'action': 'next'})
+    assert guarded['selected_problem']['slug'] == 'two-sum'
+    assert guarded['last_error'] == 'completion_required'
+
+    other = await workbench.conversation('structured-next', {'action': 'start'})
+    assert other['selected_problem']['slug'] == 'two-sum'
+    advanced = await workbench.conversation('structured-next', {'action': 'next'})
+    assert advanced['selected_problem']['slug'] == 'group-anagrams'
+
+
 async def test_invalid_thread_and_action(workbench):
     with pytest.raises(ValueError):
         await workbench.conversation('../x')
     with pytest.raises(ValueError):
         await workbench.conversation('test', {'action':'delete'})
+    with pytest.raises(ValueError, match='判题结果'):
+        await workbench.conversation('test', {'action':'judge', 'result':'UNKNOWN'})
 
 
 async def test_history_lists_each_thread_once(workbench):
@@ -104,6 +138,13 @@ async def test_http_routes_and_same_origin_guard(workbench):
     try:
         status, body = await asyncio.to_thread(request, '/')
         assert status == 200 and b'app.js' in body
+        status, body = await asyncio.to_thread(request, '/app.js')
+        assert status == 200
+        assert b"hasActiveProblem?'data-resume':'data-start'" in body
+        assert b"if(b.hasAttribute('data-resume'))location.hash='training'" in body
+        assert b"send({action:'judge',result:e.target.value})" in body
+        assert b"send({action:'next'})" in body
+        assert '复盘提示'.encode() in body
         status, body = await asyncio.to_thread(request, '/api/overview')
         assert status == 200 and len(json.loads(body)['categories']) == 18
         status, _ = await asyncio.to_thread(request, '/api/overview', {'Origin': 'https://example.com'})

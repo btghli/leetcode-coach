@@ -25,6 +25,10 @@ from .services import MetadataResolver, PatternSweepService, StudyService
 
 
 CANONICAL_PENDING_ACTIONS = frozenset({"initialize_problem", "complete_attempt"})
+TEACH_BACK_START_MESSAGE = (
+    "收到 AC。我们一次只复盘一点：你的核心数据结构（例如 map、stack 或 queue）里保存的内容代表什么？"
+    "试着补一句“它保存____，因此我能____”。想不起来可以点“复盘提示”。"
+)
 
 
 def _last_human_text(state: CoachState) -> str:
@@ -55,6 +59,9 @@ class CoachState(TypedDict):
     archive_completed: NotRequired[bool]
     attempt_recorded: NotRequired[bool]
     teach_back_start_index: NotRequired[int | None]
+    skip_problem_slug: NotRequired[str | None]
+    workflow_command: NotRequired[str | None]
+    workflow_value: NotRequired[str | None]
 
 
 class TrainingGraph:
@@ -122,12 +129,22 @@ class TrainingGraph:
             # presenting the approval request again so the UI never appears
             # silent.
             return "chat_approval" if approval_command(_last_human_text(state)) else "pending"
+        if (state.get("workflow_command") == "next_problem"
+                and state.get("judge_result") == "AC"
+                and not state.get("attempt_recorded")):
+            return "turn"
+        if state.get("workflow_command") == "next_problem":
+            return "load"
+        if state.get("workflow_command") == "judge_result":
+            return "turn"
         messages = state.get("messages", [])
         if messages and not isinstance(messages[-1], HumanMessage):
             # Resuming an idle checkpoint without a new learner message must
             # not replay the previous turn through the conversational agent.
             return "end"
         text = _last_human_text(state)
+        if next_problem_command(text) and state.get("judge_result") == "AC" and not state.get("attempt_recorded"):
+            return "turn"
         if routing_mode_command(text) is not None or next_subpattern_command(text):
             return "turn"
         if next_problem_command(text):
@@ -146,11 +163,17 @@ class TrainingGraph:
         return "turn"
 
     def load_context(self, state: CoachState) -> dict[str, Any]:
+        selected = state.get("selected_problem") or {}
+        advances = state.get("workflow_command") == "next_problem" or next_problem_command(_last_human_text(state))
+        skip_slug = selected.get("slug") if advances else None
         return {
             "phase": Phase.LOADING.value,
             "routing_mode": state.get("routing_mode", "auto"),
             "selected_problem": None if state.get("routing_mode") == "pattern-sweep" else state.get("selected_problem"),
             "hint_level": 0,
+            "skip_problem_slug": skip_slug,
+            "workflow_command": None,
+            "workflow_value": None,
             "last_error": None,
         }
 
@@ -159,7 +182,7 @@ class TrainingGraph:
             return self.select_next_sweep(state)
         # Normal routing has one deterministic owner. Pattern curriculum is a
         # separate lane selected explicitly above.
-        selected = self.study.next_problem()
+        selected = self.study.next_problem(exclude_slug=state.get("skip_problem_slug"))
         if selected is None:
             return {"phase": Phase.COMPLETE.value, "messages": [AIMessage(content="当前没有可训练题目。")], "selected_problem": None}
         return {
@@ -172,6 +195,7 @@ class TrainingGraph:
             "judge_result": None,
             "judge_failures": [],
             "teach_back_start_index": None,
+            "skip_problem_slug": None,
         }
 
     def select_next_sweep(self, state: CoachState) -> dict[str, Any]:
@@ -272,19 +296,44 @@ class TrainingGraph:
             category = selected.get("pattern", {}).get("title", "")
             subpattern = selected.get("subpattern", {}).get("title", "")
             sweep_prefix = f"题型扫荡：{category} → 小模式：{subpattern}。\n\n"
+        opening = {
+            "redo-from-memory": "直接复盘核心分组 key、一次遍历如何更新数据结构，以及复杂度。",
+            "pattern-contrast": "先说明这个小模式的识别信号，以及它和相近模式最关键的区别。",
+            "blind-solve": "先独立说明思路和关键不变量，再开始实现。",
+            "debug-drill": "先给出最小失败输入和实际输出，再定位第一个错误状态。",
+        }.get(mode, "先用自己的话说明题意和思路；如果已经知道优化解法，可以直接说明。")
         return {
             "phase": Phase.COACHING.value,
             "training_mode": mode,
             "messages": [AIMessage(content=(
                 f"{sweep_prefix}本轮新题：{title}，训练模式：`{mode}`。"
-                "先用自己的话说明题意和最直接的暴力解法。"
+                f"{opening}"
             ))],
         }
 
     def process_turn(self, state: CoachState) -> dict[str, Any]:
         text = _last_human_text(state)
         requested_mode = routing_mode_command(text)
-        if requested_mode is not None:
+        workflow_command = state.get("workflow_command")
+        workflow_value = str(state.get("workflow_value") or "").upper()
+        wants_next = workflow_command == "next_problem" or next_problem_command(text)
+        if wants_next and state.get("judge_result") == "AC" and not state.get("attempt_recorded"):
+            return {
+                "phase": Phase.TEACH_BACK.value,
+                "workflow_command": None,
+                "workflow_value": None,
+                "messages": [AIMessage(content="本题 AC 尚未保存。先完成简短复盘并批准写入，再进入下一题。")],
+                "last_error": "completion_required",
+            }
+        if workflow_command == "judge_result" and workflow_value == "AC":
+            decision = TurnDecision(action="accepted", response=TEACH_BACK_START_MESSAGE)
+        elif workflow_command == "judge_result" and workflow_value in {"WA", "TLE", "RE", "MLE"}:
+            decision = TurnDecision(
+                action="judge_failed",
+                judge_failure=workflow_value,
+                response=f"收到 {workflow_value}。请贴出最小失败输入、实际输出或完整报错。",
+            )
+        elif requested_mode is not None:
             label = "题型扫荡" if requested_mode == "pattern-sweep" else "自动选题"
             decision = TurnDecision(
                 action="switch_mode",
@@ -309,7 +358,7 @@ class TrainingGraph:
         elif text == "/quit":
             decision = TurnDecision(action="quit", response="已保存当前对话 checkpoint，下次可用同一 thread 继续。")
         elif accepted_command(text):
-            decision = TurnDecision(action="accepted", response="收到 AC。请完成 teach-back：说明 invariant、复杂度、最容易遗漏的边界，以及何时不适用。")
+            decision = TurnDecision(action="accepted", response=TEACH_BACK_START_MESSAGE)
         elif state.get("phase") == Phase.TEACH_BACK.value and state.get("judge_result") == "AC":
             teach_back = self.engine.assess_teach_back(state)
             if teach_back.action == "continue":
@@ -327,7 +376,11 @@ class TrainingGraph:
             }
         else:
             decision = self.engine.decide(state)
-        updates: dict[str, Any] = {"messages": [AIMessage(content=decision.response)]}
+        updates: dict[str, Any] = {
+            "messages": [AIMessage(content=decision.response)],
+            "workflow_command": None,
+            "workflow_value": None,
+        }
         phase = str(state.get("phase", Phase.COACHING.value))
         if decision.action in {"continue", "hint"}:
             updates["phase"] = phase if phase == Phase.TEACH_BACK.value else (
@@ -351,9 +404,11 @@ class TrainingGraph:
                 teach_back_start_index=len(state.get("messages", [])),
             )
         elif decision.action == "select_next":
+            current = state.get("selected_problem") or {}
             updates.update(
                 phase=Phase.SELECTING.value,
                 selected_problem=None,
+                skip_problem_slug=current.get("slug"),
                 training_mode=None,
                 hint_level=0,
                 judge_result=None,
@@ -364,6 +419,7 @@ class TrainingGraph:
                 archive_completed=False,
                 teach_back_start_index=None,
                 last_error=None,
+                messages=[AIMessage(content="正在按确定性学习计划选择下一题。")],
             )
         elif decision.action == "switch_mode":
             requested_mode = decision.requested_mode

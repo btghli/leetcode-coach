@@ -52,6 +52,21 @@ def test_scheduler_skips_a_due_problem_practiced_today(study_repo):
     assert StudyScheduler(ProblemRepository(study_repo)).due_problems() == []
 
 
+def test_scheduler_can_exclude_current_problem_when_advancing(study_repo):
+    study = StudyService(study_repo)
+    for metadata in (
+        ProblemMetadata(id=1, slug="two-sum", title="Two Sum", difficulty="Easy", lists=["example"]),
+        ProblemMetadata(id=49, slug="group-anagrams", title="Group Anagrams", difficulty="Medium", lists=["example"]),
+    ):
+        study.initialize_problem(metadata)
+        note = study.repository.find(metadata.slug)[0]
+        study_store.update_note_meta(note, {"status": "AC", "next_review": "2020-01-01"})
+
+    selected = StudyScheduler(ProblemRepository(study_repo)).choose_next(exclude_slug="two-sum")
+
+    assert selected["slug"] == "group-anagrams"
+
+
 def test_scheduler_reports_uninitialized_active_list_problem(study_repo):
     scheduler = StudyScheduler(ProblemRepository(study_repo))
 

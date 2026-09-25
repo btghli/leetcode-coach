@@ -34,6 +34,8 @@ def is_accepted_report(text: str) -> bool:
         return False
     if normalized in {"/ac", "ac", "ac 了", "ac了", "提交通过", "提交通过了", "过了"}:
         return True
+    if re.match(r"^/ac(?:$|\s|[：:，,。.!！])", normalized):
+        return True
     if re.fullmatch(r"#?\d+\s*ac\s*(了|通过)?[。.!！]?", normalized):
         return True
     if re.search(r"\b(?:got|received|earned)\s+ac\b", normalized):

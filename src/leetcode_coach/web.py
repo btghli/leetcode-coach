@@ -56,6 +56,20 @@ class Workbench:
                     value = Command(resume={'type': action})
                 elif action == 'start':
                     value = {'messages': []}
+                elif action == 'judge':
+                    result = str(payload.get('result') or '').upper()
+                    if result not in {'AC', 'WA', 'TLE', 'RE', 'MLE'}:
+                        raise ValueError('不支持的判题结果')
+                    value = {
+                        'messages': [HumanMessage(content=f'判题结果：{result}')],
+                        'workflow_command': 'judge_result',
+                        'workflow_value': result,
+                    }
+                elif action == 'next':
+                    value = {
+                        'messages': [HumanMessage(content='下一题')],
+                        'workflow_command': 'next_problem',
+                    }
                 elif action == 'message':
                     message = payload.get('message', '')
                     if not isinstance(message, str) or not message.strip() or len(message) > 50000:

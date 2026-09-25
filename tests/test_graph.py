@@ -82,6 +82,7 @@ def test_idle_checkpoint_does_not_replay_last_human_turn():
 
 def test_accepted_judge_reports_are_deterministic():
     assert accepted_command("/ac")
+    assert accepted_command("/ac 用java ac了")
     assert accepted_command("19 ac 了")
     assert accepted_command("#19 AC了")
     assert accepted_command("提交通过了")
@@ -90,6 +91,19 @@ def test_accepted_judge_reports_are_deterministic():
     assert not accepted_command("还没 ac")
     assert not accepted_command("I did not get ac")
     assert not accepted_command("AC 是什么意思？")
+
+
+def test_explicit_next_problem_excludes_current_selection(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    training = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine())
+    state = {
+        "selected_problem": {"slug": "group-anagrams"},
+        "messages": [HumanMessage(content="下一题")],
+    }
+
+    loaded = training.load_context(state)
+
+    assert loaded["skip_problem_slug"] == "group-anagrams"
 
 
 def test_chat_approval_requires_an_explicit_command():
@@ -111,6 +125,25 @@ def test_coaching_remains_model_driven_after_multiple_turns(study_repo):
     result = training.process_turn(state)
     assert engine.calls == 1
     assert "已经看过的数字" in result["messages"][0].content
+
+
+def test_redo_from_memory_skips_beginner_bruteforce_script(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    training = TrainingGraph(study, sweep, MetadataResolver(study, sweep), FakeEngine())
+
+    result = training.choose_mode({
+        "selected_problem": {
+            "slug": "group-anagrams",
+            "title": "Group Anagrams",
+            "status": "AC",
+            "reason": "due-review",
+        },
+    })
+
+    response = result["messages"][0].content
+    assert result["training_mode"] == "redo-from-memory"
+    assert "核心分组 key" in response
+    assert "最直接的暴力解法" not in response
 
 
 def test_next_problem_is_a_narrow_explicit_control():
@@ -206,6 +239,36 @@ async def test_full_training_loop_with_interrupt(study_repo):
     assert not completed.interrupts
     assert completed.value["phase"] == "complete"
     assert study.problem_context("two-sum")["metadata"]["mastery"] == "solid"
+
+
+async def test_ac_command_with_details_updates_state_without_model_inference(study_repo):
+    study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
+    study.initialize_problem(ProblemMetadata(
+        id=84,
+        slug="largest-rectangle-in-histogram",
+        title="Largest Rectangle in Histogram",
+        difficulty="Hard",
+        lists=["example"],
+    ))
+    engine = FakeEngine()
+    graph = TrainingGraph(study, sweep, MetadataResolver(study, sweep), engine).build(InMemorySaver())
+    config = {"configurable": {"thread_id": "ac-with-details"}}
+
+    accepted = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="/ac 用java ac了")],
+            "phase": "coaching",
+            "selected_problem": {"slug": "largest-rectangle-in-histogram"},
+            "training_mode": "redo-from-memory",
+        },
+        config=config,
+        version="v2",
+    )
+
+    assert accepted.value["phase"] == "teach_back"
+    assert accepted.value["judge_result"] == "AC"
+    assert "它保存____，因此我能____" in accepted.value["messages"][-1].content
+    assert engine.calls == 0
 
 
 async def test_selection_resumes_in_progress_before_due_review(study_repo):
@@ -611,7 +674,7 @@ def test_teach_back_question_does_not_replace_existing_assessment(study_repo):
 
 async def test_auto_routing_does_not_fall_through_to_pattern_sweep(study_repo, monkeypatch):
     study, sweep = StudyService(study_repo), PatternSweepService(study_repo)
-    monkeypatch.setattr(study, "next_problem", lambda: None)
+    monkeypatch.setattr(study, "next_problem", lambda **_: None)
     monkeypatch.setattr(sweep, "recommend_next", lambda: {
         "category": {"slug": "array-hash", "title": "数组与哈希"},
         "subpattern": {"slug": "frequency-index", "title": "计数与索引"},

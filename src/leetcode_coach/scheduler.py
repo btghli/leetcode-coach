@@ -103,29 +103,33 @@ class StudyScheduler:
                 items.append({**item, "_reason": f"active-list:{active_list}"})
         return sorted(items, key=lambda item: (item.get("id") is None, item.get("id") or 0, item.get("slug") or ""))
 
-    def choose_next(self) -> dict[str, Any] | None:
+    def choose_next(self, *, exclude_slug: str | None = None) -> dict[str, Any] | None:
         active_list = self.profile().get("active_list", "example")
         # Resume an unfinished problem before opening another review. This
         # policy lives here so every UI and graph observes the same order.
         items = [item for item in self.repository.all() if not item.get("_error")]
         for status in ("Doing", "Review"):
-            current = next((item for item in items if item.get("status") == status), None)
+            current = next(
+                (item for item in items if item.get("status") == status and item.get("slug") != exclude_slug),
+                None,
+            )
             if current:
                 return {**current, "_reason": "current-work"}
-        due = self.due_problems()
+        due = [item for item in self.due_problems() if item.get("slug") != exclude_slug]
         if due:
             return {**due[0], "_reason": "due-review"}
         candidates = self.active_candidates(active_list)
         for status in ("Doing", "Todo", "Review"):
             for item in candidates:
-                if item.get("status") == status:
+                if item.get("status") == status and item.get("slug") != exclude_slug:
                     return {**item, "_reason": f"active-list:{active_list}"}
         known = {item.get("slug") for item in items}
         for slug in self.list_slugs(active_list):
-            if slug not in known:
+            if slug not in known and slug != exclude_slug:
                 return self.uninitialized(slug, f"active-list:{active_list}:needs-init")
         for item in items:
-            if not item.get("_error") and item.get("status") in {"Doing", "Todo", "Review"}:
+            if (not item.get("_error") and item.get("slug") != exclude_slug
+                    and item.get("status") in {"Doing", "Todo", "Review"}):
                 return {**item, "_reason": "any-open-problem"}
         return None
 

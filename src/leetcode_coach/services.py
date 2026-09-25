@@ -28,8 +28,8 @@ class StudyService:
     def plan_day(self) -> dict[str, Any]:
         return self.scheduler.plan_day()
 
-    def next_problem(self) -> dict[str, Any] | None:
-        return self.scheduler.compact(self.scheduler.choose_next())
+    def next_problem(self, *, exclude_slug: str | None = None) -> dict[str, Any] | None:
+        return self.scheduler.compact(self.scheduler.choose_next(exclude_slug=exclude_slug))
 
     def mistakes(self, days: int = 14, limit: int = 5) -> list[dict[str, Any]]:
         return self.scheduler.mistake_summary(days=days, limit=limit)
